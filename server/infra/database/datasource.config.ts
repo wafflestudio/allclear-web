@@ -1,0 +1,52 @@
+import { DataSourceOptions } from 'typeorm'
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies'
+import {
+  AccountEntity,
+  AccountUserEntity,
+  ClubEntity,
+  DeviceEntity,
+  ServiceUserEntity,
+  UserActivityLogEntity,
+  UserEntity,
+} from './entities'
+import { ENV } from '../../ENV'
+import { ClubReviewKeywordEntity } from './entities/club-review-keyword.entity'
+import { UserClubReviewEntity } from './entities/user-club-review.entity'
+import { ClubManagerEntity } from './entities/club-manager.entity'
+import { ClubReviewKeywordCategoryEntity } from './entities/user-club-review-category.entity'
+import { UserVoiceEntity } from './entities/user-voice.entity'
+import { UserSavedClubEntity } from './entities/user-saved-club.entity'
+import { CollegeMajorEntity } from './entities/college-major.entity'
+import { ClubManagerRegisterRequestEntity } from './entities/club-manager-register-request.entity'
+
+export const MAIN_DATA_SOURCE_OPTIONS: DataSourceOptions = {
+  type: 'postgres',
+  host: ENV.DB.HOST,
+  port: ENV.DB.PORT,
+  entities: [
+    AccountEntity,
+    UserEntity,
+    AccountUserEntity,
+    ServiceUserEntity,
+    DeviceEntity,
+    UserActivityLogEntity,
+    ClubEntity,
+    ClubReviewKeywordEntity,
+    ClubReviewKeywordCategoryEntity,
+    UserClubReviewEntity,
+    UserSavedClubEntity,
+    ClubManagerEntity,
+    ClubManagerRegisterRequestEntity,
+    UserVoiceEntity,
+    CollegeMajorEntity,
+  ],
+  username: ENV.DB.USERNAME,
+  password: ENV.DB.PASSWORD,
+  database: ENV.DB.DB_NAME,
+  synchronize: false,
+  namingStrategy: new SnakeNamingStrategy(),
+  logging: false,
+  extra: {
+    connectionLimit: 20,
+  },
+}
