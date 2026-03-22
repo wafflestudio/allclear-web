@@ -124,7 +124,7 @@ export class AuthService {
         code: authcode,
         client_id: ENV.KAKAO.CLIENT_ID,
         client_secret: ENV.KAKAO.CLIENT_SECRET,
-        redirectUri: ENV.KAKAO.REDIRECT_URI,
+        redirect_uri: ENV.KAKAO.REDIRECT_URI,
       }),
     })
     return tokenResponse.data.access_token
