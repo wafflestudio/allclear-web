@@ -1,11 +1,13 @@
 name: Deploy-dev
 
 on:
-  push:
+  pull_request:
     branches: [develop]
+    types: [closed]
 
 jobs:
   deploy:
+    if: github.event.pull_request.merged == true
     uses: ./.github/workflows/_deploy.yml
     with:
       ocir_repository: allclear-dev/allclear-web
