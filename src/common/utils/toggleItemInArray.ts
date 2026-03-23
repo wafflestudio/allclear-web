@@ -1,3 +1,3 @@
-import _ from 'lodash-es'
+import { xor } from 'lodash-es'
 
-export const toggleItemInArray = <T>(pool: T[], ...targets: T[]): T[] => _.xor(pool, targets)
+export const toggleItemInArray = <T>(pool: T[], ...targets: T[]): T[] => xor(pool, targets)
