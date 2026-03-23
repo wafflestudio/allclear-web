@@ -1,6 +1,6 @@
 import React from 'react'
 import clsx from 'clsx'
-import _ from 'lodash-es'
+import { chunk } from 'lodash-es'
 import { toggleItemInArray } from '../../../common/utils'
 import { Interest } from '../../domain/types/Interest'
 
@@ -23,7 +23,7 @@ type Props = {
 const SelectInterests: React.FC<Props> = ({ interestIds, setInterestIds }) => {
   return (
     <div className={'flex h-full w-full flex-col gap-5'}>
-      {_.chunk(interests, 3).map((tripleInterests) => (
+      {chunk(interests, 3).map((tripleInterests) => (
         <div className={'flex gap-4'}>
           {tripleInterests.map((interest) => (
             <button
