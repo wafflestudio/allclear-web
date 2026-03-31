@@ -11,11 +11,23 @@ import { ClubManagerEntity } from '../infra/database/entities/club-manager.entit
 import { UserSavedClubEntity } from '../infra/database/entities/user-saved-club.entity'
 import { ClubManagerRegisterRequestEntity } from '../infra/database/entities/club-manager-register-request.entity'
 import dayjs from 'dayjs'
+import { disassemble } from 'es-hangul'
 import leven from 'leven'
 import { NotFoundError } from '../domain/error'
 
 type ClubUuid = string
 type ReviewKeywordId = string
+type ClubSearchResponse = {
+  clubs: Club[]
+  correctedQuery: string | null
+  isTypoCorrected: boolean
+}
+type CorrectionCandidate = {
+  term: string
+  normalizedTerm: string
+  decomposedTerm: string
+}
+
 const sortByPopularAndEachRandom = (clubs: Club[]) =>
   clubs.sort((a, b) => {
     if (a.isPopular && !b.isPopular) {
@@ -160,12 +172,59 @@ export class ClubService {
   }
 
   async search(query: string): Promise<Club[]> {
+    const normalizedQuery = query.trim()
     this.userActivityLogRepository
       .insert({
         type: UserActivityLogType.CALL_SEARCH_CLUBS_API,
-        params: JSON.stringify({ query }),
+        params: JSON.stringify({ query: normalizedQuery }),
       })
       .catch(console.error)
+    return this.searchByQuery(normalizedQuery)
+  }
+
+  async searchWithTypoCorrection(query: string): Promise<ClubSearchResponse> {
+    const normalizedQuery = query.trim()
+    this.userActivityLogRepository
+      .insert({
+        type: UserActivityLogType.CALL_SEARCH_CLUBS_API,
+        params: JSON.stringify({ query: normalizedQuery }),
+      })
+      .catch(console.error)
+    const clubs = await this.searchByQuery(normalizedQuery)
+    if (clubs.length > 0) {
+      return {
+        clubs,
+        correctedQuery: null,
+        isTypoCorrected: false,
+      }
+    }
+
+    const correctedQuery = await this.findCorrectedSearchQuery(normalizedQuery)
+    if (!correctedQuery || correctedQuery === normalizedQuery) {
+      return {
+        clubs: [],
+        correctedQuery: null,
+        isTypoCorrected: false,
+      }
+    }
+
+    const correctedClubs = await this.searchByQuery(correctedQuery)
+    if (correctedClubs.length === 0) {
+      return {
+        clubs: [],
+        correctedQuery: null,
+        isTypoCorrected: false,
+      }
+    }
+
+    return {
+      clubs: correctedClubs,
+      correctedQuery,
+      isTypoCorrected: true,
+    }
+  }
+
+  private async searchByQuery(query: string): Promise<Club[]> {
     const entities = await this.clubRepository.find({
       where: [
         {
@@ -190,6 +249,123 @@ export class ClubService {
     const clubReview = await this.getClubReviews(entities.map((it) => it.uuid))
     const clubs = entities.map((it) => toClubDomain(it, clubReview.get(it.uuid)))
     return sortByPopularAndEachRandom(clubs)
+  }
+
+  private async findCorrectedSearchQuery(query: string): Promise<string | null> {
+    if (query.trim().length < 2) {
+      return null
+    }
+
+    const normalizedQuery = this.normalizeSearchTerm(query)
+    const decomposedQuery = this.decomposeToJamo(normalizedQuery)
+    if (!decomposedQuery) {
+      return null
+    }
+    const clubs = await this.clubRepository.find({
+      where: {
+        deletedAt: IsNull(),
+      },
+    })
+    const candidateTerms = Array.from(
+      new Map<string, CorrectionCandidate>(
+        clubs
+          .flatMap((club) => this.extractCorrectionCandidates(club))
+          .map((candidate) => [candidate.normalizedTerm, candidate] as const),
+      ).values(),
+    )
+    const bestCandidate = candidateTerms
+      .map((candidate) => {
+        return {
+          ...candidate,
+          similarity: this.calculateJamoSimilarity(decomposedQuery, candidate.decomposedTerm),
+          lengthDiff: Math.abs(candidate.decomposedTerm.length - decomposedQuery.length),
+        }
+      })
+      .filter((it) => it.normalizedTerm !== normalizedQuery)
+      .sort(
+        (a, b) =>
+          b.similarity - a.similarity ||
+          a.lengthDiff - b.lengthDiff ||
+          a.normalizedTerm.length - b.normalizedTerm.length,
+      )[0]
+
+    if (!bestCandidate) {
+      return null
+    }
+
+    if (bestCandidate.similarity < this.minimumJamoSimilarity(decomposedQuery.length)) {
+      return null
+    }
+
+    return bestCandidate.term
+  }
+
+  private extractCorrectionCandidates(
+    club: Pick<ClubEntity, 'name' | 'fullName' | 'tags'>,
+  ): CorrectionCandidate[] {
+    const candidates = new Map<string, CorrectionCandidate>()
+    const register = (term: string) => {
+      const normalizedTerm = this.normalizeSearchTerm(term)
+      const decomposedTerm = this.decomposeToJamo(normalizedTerm)
+      if (!normalizedTerm || !decomposedTerm) {
+        return
+      }
+
+      if (!candidates.has(normalizedTerm)) {
+        candidates.set(normalizedTerm, {
+          term: term.trim(),
+          normalizedTerm,
+          decomposedTerm,
+        })
+      }
+    }
+
+    ;[
+      club.name,
+      ...this.splitSearchTerms(club.name),
+      ...this.splitSearchTerms(club.fullName),
+      ...(club.tags ?? []).flatMap((tag) => this.splitSearchTerms(tag)),
+    ].forEach(register)
+
+    return Array.from(candidates.values())
+  }
+
+  private splitSearchTerms(value: string | null | undefined): string[] {
+    if (!value) {
+      return []
+    }
+
+    return value
+      .split(/[\s,./()[\]{}\-_:;!?'"`~|]+/g)
+      .map((term) => term.trim())
+      .filter((term) => term.length >= 2)
+  }
+
+  private normalizeSearchTerm(term: string): string {
+    return term.trim().toLowerCase().replace(/\s+/g, '')
+  }
+
+  private decomposeToJamo(term: string): string {
+    return disassemble(term).replace(/\s+/g, '')
+  }
+
+  private calculateJamoSimilarity(query: string, candidate: string): number {
+    const maxLength = Math.max(query.length, candidate.length)
+    if (maxLength === 0) {
+      return 0
+    }
+
+    return 1 - leven(query, candidate) / maxLength
+  }
+
+  private minimumJamoSimilarity(jamoLength: number): number {
+    if (jamoLength <= 4) {
+      return 0.8
+    }
+    if (jamoLength <= 8) {
+      return 0.75
+    }
+    return 0.7
   }
 
   async getCategories(): Promise<ClubCategory[]> {
