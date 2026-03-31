@@ -11,7 +11,7 @@ export class AccountEntity extends TimeStampMixin {
   @Column({ type: 'enum', enum: AccountType, name: 'type' })
   type: AccountType
 
-  @Column({ type: 'varchar', length: 64, name: 'username' })
+  @Column({ type: 'varchar', length: 255, name: 'username' })
   username: string
 
   @Column({ type: 'varchar', length: 64, default: '', name: 'password' })

@@ -27,16 +27,22 @@ export default async function handler(
     const decodedObj = jwt.decode(payload.id_token) as {
       sub?: string
       email?: string
+      transfer_sub?: string
     } | null
     if (!decodedObj) {
       console.error('appleLoginNativeCallback jwt.decode error', payload.id_token)
       return res.status(401).send('Unauthorized')
     }
-    const accountId = await authService.createAppleUser(
-      decodedObj.sub,
-      decodedObj.email,
-      payload.user,
-    )
+    if (!decodedObj.sub) {
+      console.error('appleLoginNativeCallback missing sub', decodedObj)
+      return res.status(401).send('Unauthorized')
+    }
+    const accountId = await authService.createAppleUser({
+      accountId: decodedObj.sub,
+      email: decodedObj.email,
+      transferSub: decodedObj.transfer_sub,
+      user: payload.user,
+    })
     return jwt.sign(
       { sub: accountId },
       ENV.JWT.SECRET_KEY,
