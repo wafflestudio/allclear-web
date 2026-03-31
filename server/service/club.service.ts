@@ -172,25 +172,23 @@ export class ClubService {
   }
 
   async search(query: string): Promise<Club[]> {
-    const normalizedQuery = query.trim()
     this.userActivityLogRepository
       .insert({
         type: UserActivityLogType.CALL_SEARCH_CLUBS_API,
-        params: JSON.stringify({ query: normalizedQuery }),
+        params: JSON.stringify({ query }),
       })
       .catch(console.error)
-    return this.searchByQuery(normalizedQuery)
+    return this.searchByQuery(query)
   }
 
   async searchWithTypoCorrection(query: string): Promise<ClubSearchResponse> {
-    const normalizedQuery = query.trim()
     this.userActivityLogRepository
       .insert({
         type: UserActivityLogType.CALL_SEARCH_CLUBS_API,
-        params: JSON.stringify({ query: normalizedQuery }),
+        params: JSON.stringify({ query }),
       })
       .catch(console.error)
-    const clubs = await this.searchByQuery(normalizedQuery)
+    const clubs = await this.searchByQuery(query)
     if (clubs.length > 0) {
       return {
         clubs,
@@ -199,8 +197,8 @@ export class ClubService {
       }
     }
 
-    const correctedQuery = await this.findCorrectedSearchQuery(normalizedQuery)
-    if (!correctedQuery || correctedQuery === normalizedQuery) {
+    const correctedQuery = await this.findCorrectedSearchQuery(query)
+    if (!correctedQuery || correctedQuery === query ) {
       return {
         clubs: [],
         correctedQuery: null,
