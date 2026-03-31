@@ -269,7 +269,7 @@ export class ClubService {
     const candidateTerms = Array.from(
       new Map<string, CorrectionCandidate>(
         clubs
-          .flatMap((club) => this.extractCorrectionCandidates(club))
+          .flatMap((club) => this.extractCorrectionCandidates(club, normalizedQuery.length))
           .map((candidate) => [candidate.normalizedTerm, candidate] as const),
       ).values(),
     )
@@ -302,6 +302,7 @@ export class ClubService {
 
   private extractCorrectionCandidates(
     club: Pick<ClubEntity, 'name' | 'fullName' | 'tags'>,
+    queryLength: number,
   ): CorrectionCandidate[] {
     const candidates = new Map<string, CorrectionCandidate>()
     const register = (term: string) => {
@@ -322,9 +323,15 @@ export class ClubService {
 
     ;[
       club.name,
-      ...this.splitSearchTerms(club.name),
-      ...this.splitSearchTerms(club.fullName),
-      ...(club.tags ?? []).flatMap((tag) => this.splitSearchTerms(tag)),
+      ...this.splitSearchTerms(club.name).flatMap((term) =>
+        this.expandCorrectionTerms(term, queryLength),
+      ),
+      ...this.splitSearchTerms(club.fullName).flatMap((term) =>
+        this.expandCorrectionTerms(term, queryLength),
+      ),
+      ...(club.tags ?? []).flatMap((tag) =>
+        this.splitSearchTerms(tag).flatMap((term) => this.expandCorrectionTerms(term, queryLength)),
+      ),
     ].forEach(register)
 
     return Array.from(candidates.values())
@@ -339,6 +346,26 @@ export class ClubService {
       .split(/[\s,./()[\]{}\-_:;!?'"`~|]+/g)
       .map((term) => term.trim())
       .filter((term) => term.length >= 2)
+  }
+
+  private expandCorrectionTerms(term: string, queryLength: number): string[] {
+    const trimmedTerm = term.trim()
+    if (trimmedTerm.length <= queryLength + 1) {
+      return [trimmedTerm]
+    }
+
+    const expandedTerms = new Set<string>([trimmedTerm])
+    for (const windowLength of [queryLength, queryLength + 1]) {
+      if (windowLength < 2 || windowLength > trimmedTerm.length) {
+        continue
+      }
+
+      for (let start = 0; start + windowLength <= trimmedTerm.length; start += 1) {
+        expandedTerms.add(trimmedTerm.slice(start, start + windowLength))
+      }
+    }
+
+    return Array.from(expandedTerms)
   }
 
   private normalizeSearchTerm(term: string): string {
