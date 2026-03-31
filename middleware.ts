@@ -3,21 +3,12 @@ import { ENV } from './server/ENV'
 import * as jose from 'jose'
 import { bearerToken } from './server/util/token'
 
-const AUTH_PATHS = [
-  '/api/v1/auth/kakao/native/callback',
-  '/api/v1/auth/apple/callback',
-]
-
 export const middleware: NextMiddleware = async (req) => {
   if (process.env.MAINTENANCE_MODE === 'true') {
     return NextResponse.json(
       { message: '서버 점검 중입니다. 잠시 후 다시 시도해주세요.' },
       { status: 503 },
     )
-  }
-
-  if (AUTH_PATHS.some((path) => req.nextUrl.pathname === path)) {
-    return NextResponse.next()
   }
 
   try {
@@ -53,8 +44,6 @@ export const middleware: NextMiddleware = async (req) => {
 }
 export const config = {
   matcher: [
-    '/api/v1/auth/kakao/native/callback',
-    '/api/v1/auth/apple/callback',
     '/api/v1/users/me',
     '/api/v1/users/me/clubs',
     '/api/v1/users/me/clubs/saved',
