@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm'
+import { IsNull, Not, Repository } from 'typeorm'
 import { InjectRepository, Service } from '../provider'
 import {
   AccountEntity,
@@ -152,8 +152,14 @@ export class UserService {
     })
   }
 
-  async getCollegeMajors(): Promise<CollegeMajor[]> {
+  async getCollegeMajors(options: { includeNullMajor?: boolean } = {}): Promise<CollegeMajor[]> {
+    const { includeNullMajor = false } = options
     const entities = await this.collegeMajorRepository.find({
+      where: includeNullMajor
+        ? undefined
+        : {
+            major: Not(IsNull()),
+          },
       order: {
         college: 'ASC',
         id: 'ASC',
