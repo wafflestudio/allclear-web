@@ -294,3 +294,6 @@ $RECYCLE.BIN/
 # migration docs (contain secrets)
 oci-migration.md
 oci-vault-secrets.md
+
+
+.codex
