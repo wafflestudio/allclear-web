@@ -23,8 +23,9 @@ export default async function handler(
       if (!query) {
         return res.status(400).send('query is required')
       }
-      const { clubs, correctedQuery, isTypoCorrected } =
-        await clubService.searchWithTypoCorrection(query)
+      const { clubs, correctedQuery, isTypoCorrected } = await clubService.searchWithTypoCorrection(
+        query,
+      )
       return res.status(200).json({
         clubs: clubs,
         totalSize: clubs.length,
