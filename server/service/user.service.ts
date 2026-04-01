@@ -111,7 +111,7 @@ export class UserService {
       })
       if (collegeMajor) {
         college = collegeMajor.college
-        major = collegeMajor.major
+        major = collegeMajor.major ?? ''
       }
     }
     await this.serviceUserRepository.update(user.serviceUserId, {
