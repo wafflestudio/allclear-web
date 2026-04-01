@@ -17,3 +17,10 @@ SET affiliation_type = CASE
     WHEN college = '중앙동아리' THEN '중앙동아리'
     ELSE '소속동아리'
 END;
+
+UPDATE club
+SET college_major_id = cm.id
+FROM college_major cm
+WHERE club.college = cm.college
+  AND cm.major IS NULL
+  AND club.affiliation_type = '소속동아리';
