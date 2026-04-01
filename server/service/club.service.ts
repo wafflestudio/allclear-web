@@ -22,6 +22,7 @@ type ClubSearchResponse = {
   correctedQuery: string | null
   isTypoCorrected: boolean
 }
+type ClubCorrectionSource = Pick<ClubEntity, 'name' | 'fullName' | 'tags'>
 type CorrectionCandidate = {
   term: string
   normalizedTerm: string
@@ -249,28 +250,60 @@ export class ClubService {
     return sortByPopularAndEachRandom(clubs)
   }
 
+  private normalizeSearchTerm(term: string): string {
+    return term.trim().toLowerCase().replace(/\s+/g, '')
+  }
+
+  private decomposeToJamo(term: string): string {
+    return disassemble(term).replace(/\s+/g, '')
+  }
+
+  private calculateJamoSimilarity(query: string, candidate: string): number {
+    const maxLength = Math.max(query.length, candidate.length)
+    if (maxLength === 0) {
+      return 0
+    }
+    return 1 - leven(query, candidate) / maxLength
+  }
+
+  private minimumJamoSimilarity(jamoLength: number): number {
+    if (jamoLength <= 4) {
+      return 0.8
+    }
+    if (jamoLength <= 8) {
+      return 0.75
+    }
+    return 0.7
+  }
+
   private async findCorrectedSearchQuery(query: string): Promise<string | null> {
+    
+    // Step 1. query 예쁘게 가공하기
     if (query.trim().length < 2) {
       return null
     }
-
     const normalizedQuery = this.normalizeSearchTerm(query)
     const decomposedQuery = this.decomposeToJamo(normalizedQuery)
     if (!decomposedQuery) {
       return null
     }
+
+    // Step 2. clubs에서 필요한 정보 가져오기
     const clubs = await this.clubRepository.find({
+      select: {
+        name: true,
+        fullName: true,
+        tags: true,
+      },
       where: {
         deletedAt: IsNull(),
       },
     })
-    const candidateTerms = Array.from(
-      new Map<string, CorrectionCandidate>(
-        clubs
-          .flatMap((club) => this.extractCorrectionCandidates(club, normalizedQuery.length))
-          .map((candidate) => [candidate.normalizedTerm, candidate] as const),
-      ).values(),
-    )
+
+    // Step 3. 교정될 문자열 후보 가져오기
+    const candidateTerms = this.collectCorrectionCandidates(clubs, normalizedQuery.length)
+
+    // Step 4. 최고의 문자열 선정하기
     const bestCandidate = candidateTerms
       .map((candidate) => {
         return {
@@ -298,10 +331,20 @@ export class ClubService {
     return bestCandidate.term
   }
 
-  private extractCorrectionCandidates(
-    club: Pick<ClubEntity, 'name' | 'fullName' | 'tags'>,
+  private collectCorrectionCandidates(
+    clubs: ClubCorrectionSource[],
     queryLength: number,
   ): CorrectionCandidate[] {
+
+    const splitSearchTerms = (value: string | null | undefined) => {
+      if (!value) { return [] }
+
+      return value
+        .split(/[\s,./()[\]{}\-_:;!?'"`~|]+/g)
+        .map((term) => term.trim())
+        .filter((term) => term.length >= 2)
+    }
+
     const candidates = new Map<string, CorrectionCandidate>()
     const register = (term: string) => {
       const normalizedTerm = this.normalizeSearchTerm(term)
@@ -319,78 +362,36 @@ export class ClubService {
       }
     }
 
-    ;[
-      club.name,
-      ...this.splitSearchTerms(club.name).flatMap((term) =>
-        this.expandCorrectionTerms(term, queryLength),
-      ),
-      ...this.splitSearchTerms(club.fullName).flatMap((term) =>
-        this.expandCorrectionTerms(term, queryLength),
-      ),
-      ...(club.tags ?? []).flatMap((tag) =>
-        this.splitSearchTerms(tag).flatMap((term) => this.expandCorrectionTerms(term, queryLength)),
-      ),
-    ].forEach(register)
+    const registerExpandedTerms = (value: string | null | undefined) => {
+      for (const term of splitSearchTerms(value)) {
+        register(term)
+
+        if (term.length <= queryLength + 1) {
+          continue
+        }
+
+        for (const windowLength of [queryLength, queryLength + 1]) {
+          if (windowLength < 2 || windowLength > term.length) {
+            continue
+          }
+
+          for (let start = 0; start + windowLength <= term.length; start += 1) {
+            register(term.slice(start, start + windowLength))
+          }
+        }
+      }
+    }
+
+    for (const club of clubs) {
+      register(club.name)
+      registerExpandedTerms(club.name)
+      registerExpandedTerms(club.fullName)
+      for (const tag of club.tags ?? []) {
+        registerExpandedTerms(tag)
+      }
+    }
 
     return Array.from(candidates.values())
-  }
-
-  private splitSearchTerms(value: string | null | undefined): string[] {
-    if (!value) {
-      return []
-    }
-
-    return value
-      .split(/[\s,./()[\]{}\-_:;!?'"`~|]+/g)
-      .map((term) => term.trim())
-      .filter((term) => term.length >= 2)
-  }
-
-  private expandCorrectionTerms(term: string, queryLength: number): string[] {
-    const trimmedTerm = term.trim()
-    if (trimmedTerm.length <= queryLength + 1) {
-      return [trimmedTerm]
-    }
-
-    const expandedTerms = new Set<string>([trimmedTerm])
-    for (const windowLength of [queryLength, queryLength + 1]) {
-      if (windowLength < 2 || windowLength > trimmedTerm.length) {
-        continue
-      }
-
-      for (let start = 0; start + windowLength <= trimmedTerm.length; start += 1) {
-        expandedTerms.add(trimmedTerm.slice(start, start + windowLength))
-      }
-    }
-
-    return Array.from(expandedTerms)
-  }
-
-  private normalizeSearchTerm(term: string): string {
-    return term.trim().toLowerCase().replace(/\s+/g, '')
-  }
-
-  private decomposeToJamo(term: string): string {
-    return disassemble(term).replace(/\s+/g, '')
-  }
-
-  private calculateJamoSimilarity(query: string, candidate: string): number {
-    const maxLength = Math.max(query.length, candidate.length)
-    if (maxLength === 0) {
-      return 0
-    }
-
-    return 1 - leven(query, candidate) / maxLength
-  }
-
-  private minimumJamoSimilarity(jamoLength: number): number {
-    if (jamoLength <= 4) {
-      return 0.8
-    }
-    if (jamoLength <= 8) {
-      return 0.75
-    }
-    return 0.7
   }
 
   async getCategories(): Promise<ClubCategory[]> {
