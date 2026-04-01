@@ -336,6 +336,7 @@ export class ClubService {
     queryLength: number,
   ): CorrectionCandidate[] {
 
+    // Step 1. string을 공백 단위로 쪼개서 list로 만드는 함수
     const splitSearchTerms = (value: string | null | undefined) => {
       if (!value) { return [] }
 
@@ -344,7 +345,9 @@ export class ClubService {
         .map((term) => term.trim())
         .filter((term) => term.length >= 2)
     }
-
+    
+    // Step 2. string을 index로 하는 Map과 
+    // 그 Map을 위한 helper 함수
     const candidates = new Map<string, CorrectionCandidate>()
     const register = (term: string) => {
       const normalizedTerm = this.normalizeSearchTerm(term)
@@ -362,6 +365,8 @@ export class ClubService {
       }
     }
 
+    // Step 3. queryLength에 맞춰 string[]을 따라가며
+    // map에 등록하는 함수
     const registerExpandedTerms = (value: string | null | undefined) => {
       for (const term of splitSearchTerms(value)) {
         register(term)
@@ -382,6 +387,8 @@ export class ClubService {
       }
     }
 
+    // Step 4. name, fullname, tag를 잘 쪼개서
+    // map에 등록한다. 
     for (const club of clubs) {
       register(club.name)
       registerExpandedTerms(club.name)
@@ -391,6 +398,7 @@ export class ClubService {
       }
     }
 
+    // Step 5. map을 array로 변환
     return Array.from(candidates.values())
   }
 
