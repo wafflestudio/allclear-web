@@ -24,3 +24,12 @@ FROM college_major cm
 WHERE club.college = cm.college
   AND cm.major IS NULL
   AND club.affiliation_type = '소속동아리';
+
+ALTER TABLE club 
+  ADD COLUMN approved_at timestamp without time zone,
+  ADD COLUMN is_approved boolean NOT NULL DEFAULT false;
+
+UPDATE club 
+SET 
+  approved_at = now(), 
+  is_approved = true;
