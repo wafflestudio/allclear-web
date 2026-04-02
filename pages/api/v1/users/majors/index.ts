@@ -15,16 +15,8 @@ export default async function handler(
   try {
     const userService = Provider.getService(UserService)
 
-    const isTrueQueryValue = (value: string | string[] | undefined) => {
-      if (Array.isArray(value)) {
-        return value[0] === 'true'
-      }
-      return value === 'true'
-    }
-
     if (req.method == 'GET') {
-      const includeNullMajor = isTrueQueryValue(req.query.includeNullMajor)
-      const collegeMajors = await userService.getCollegeMajors({ includeNullMajor })
+      const collegeMajors = await userService.getCollegeMajors()
       return res.status(200).json({
         majors: collegeMajors,
         totalSize: collegeMajors.length,

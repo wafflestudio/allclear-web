@@ -1,5 +1,4 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { CollegeMajorEntity } from './college-major.entity'
+import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm'
 
 @Entity('club')
 @Index('ux_club_uuid', ['uuid'])
@@ -27,16 +26,6 @@ export class ClubEntity {
 
   @Column({ type: 'varchar', default: '', nullable: true, name: 'college' })
   college: string | null
-
-  @Column({ type: 'varchar', default: '', name: 'affiliation_type' })
-  affiliationType: string
-
-  @Column({ type: 'int', nullable: true, name: 'college_major_id' })
-  collegeMajorId: number | null
-
-  @ManyToOne(() => CollegeMajorEntity, { nullable: true, eager: true })
-  @JoinColumn({ name: 'college_major_id' })
-  collegeMajor: CollegeMajorEntity | null
 
   @Column({ type: 'varchar', default: '', length: 300, name: 'image_uri' })
   imageUri: string
@@ -85,10 +74,4 @@ export class ClubEntity {
 
   @Column({ type: 'timestamp with time zone', nullable: true, name: 'deleted_at' })
   deletedAt: string | null
-
-  @Column({ type: 'timestamp without time zone', nullable: true, name: 'approved_at' })
-  approvedAt: string | null
-
-  @Column({ type: 'boolean', default: false, name: 'is_approved' })
-  isApproved: boolean
 }

@@ -9,6 +9,6 @@ export class CollegeMajorEntity extends TimeStampMixin {
   @Column({ type: 'varchar', length: 50, default: '', name: 'college' })
   college: string
 
-  @Column({ type: 'varchar', length: 100, nullable: true, name: 'major' })
-  major: string | null
+  @Column({ type: 'varchar', length: 100, default: '', name: 'major' })
+  major: string
 }
