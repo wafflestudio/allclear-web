@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import { Provider } from 'server/provider'
 import { AuthService } from 'server/service/auth.service'
 import { ENV } from 'server/ENV'
+import { KakaoNativeCallbackPayloadSchema } from 'src/lib/schemas/auth'
 
 type ResponseData = {
   token: string
@@ -16,7 +17,7 @@ export default async function handler(
     const authService = Provider.getService(AuthService)
 
     if (req.method == 'POST') {
-      const accessToken = req.body.accessToken as string
+      const { accessToken } = KakaoNativeCallbackPayloadSchema.parse(req.body)
       console.log(accessToken)
       if (!accessToken) {
         return res.status(401).send('Unauthorized')

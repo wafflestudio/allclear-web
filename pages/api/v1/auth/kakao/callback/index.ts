@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import { ENV } from 'server/ENV'
 import { Provider } from 'server/provider'
 import { AuthService } from 'server/service/auth.service'
+import { KakaoCallbackQuerySchema } from 'src/lib/schemas/auth'
 
 type ResponseData = {
   token: string
@@ -16,7 +17,7 @@ export default async function handler(
     const authService = Provider.getService(AuthService)
 
     if (req.method == 'GET') {
-      const authcode = req.query.code as string
+      const { code: authcode } = KakaoCallbackQuerySchema.parse(req.query)
       if (!authcode) {
         return res.status(401).send('unauthorized')
       }

@@ -3,17 +3,13 @@ import { Provider } from 'server/provider'
 import { UserService } from 'server/service/user.service'
 import { UserNotFoundError } from 'server/domain/error'
 import { ClubService } from 'server/service/club.service'
-import { z } from 'zod'
-
-const QueryValidator = z.object({
-  uuid: z.string().uuid(),
-})
+import { ClubUuidParamsSchema } from 'src/lib/schemas/clubs'
 export default async function handler(req: NextApiRequest, res: NextApiResponse<null | string>) {
   try {
     const userService = Provider.getService(UserService)
     const clubService = Provider.getService(ClubService)
 
-    const { uuid: clubUuid } = QueryValidator.parse(req.query)
+    const { uuid: clubUuid } = ClubUuidParamsSchema.parse(req.query)
     if (req.method === 'POST') {
       const user = await userService.getUserByAccountId(req.headers.user as string)
       await clubService.saveClubToMyCollection(user.serviceUserId, clubUuid)

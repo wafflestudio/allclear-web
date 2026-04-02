@@ -3,10 +3,7 @@ import { Provider } from 'server/provider'
 import { ClubService } from 'server/service/club.service'
 import { Club } from 'server/domain/model/Club'
 import { z, ZodIssue } from 'zod'
-
-const QueryValidator = z.object({
-  uuid: z.string().uuid(),
-})
+import { ClubUuidParamsSchema } from 'src/lib/schemas/clubs'
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,7 +12,7 @@ export default async function handler(
   try {
     const clubService = Provider.getService(ClubService)
     if (req.method == 'GET') {
-      const { uuid: ClubUuid } = QueryValidator.parse(req.query)
+      const { uuid: ClubUuid } = ClubUuidParamsSchema.parse(req.query)
       const club = await clubService.findByUuid(ClubUuid)
       return res.status(200).json(club)
     }

@@ -4,9 +4,8 @@ import { ClubEntity } from '../infra/database/entities'
 import { UserClubReviewEntity } from '../infra/database/entities/user-club-review.entity'
 import { ClubReviewKeywordEntity } from '../infra/database/entities/club-review-keyword.entity'
 import { ClubReviewKeywordCategoryEntity } from '../infra/database/entities/user-club-review-category.entity'
-import { ReviewKeywordCategory } from '../../pages/api/v1/clubs/reviews/keywords'
-import { ClubRanking } from '../../pages/api/v1/clubs/rankings'
-import { MyReview } from '../../pages/api/v1/clubs/[uuid]/reviews/me'
+import { ReviewKeywordCategory } from '../../src/lib/schemas/common'
+import { ClubRanking, MyReview } from '../../src/lib/schemas/clubs'
 
 @Service
 export class ReviewService {

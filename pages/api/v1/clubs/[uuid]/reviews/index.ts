@@ -4,15 +4,7 @@ import { ReviewService } from 'server/service/review.service'
 import { UserService } from 'server/service/user.service'
 import { z } from 'zod'
 import { UserNotFoundError } from 'server/domain/error'
-
-const UpdateClubReviewValidator = z.object({
-  rating: z.number().min(0).max(5).optional(),
-  reviewKeywordIds: z.array(z.string().uuid()).optional(),
-  content: z.string().trim().nonempty().max(100).optional(),
-})
-const QueryValidator = z.object({
-  uuid: z.string().uuid(),
-})
+import { ClubUuidParamsSchema, UpdateClubReviewSchema } from 'src/lib/schemas/clubs'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -20,9 +12,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const reviewService = Provider.getService(ReviewService)
 
     if (req.method == 'POST') {
-      const { uuid: clubUuid } = QueryValidator.parse(req.query)
+      const { uuid: clubUuid } = ClubUuidParamsSchema.parse(req.query)
       const user = await userService.getUserByAccountId(req.headers.user as string)
-      const body = UpdateClubReviewValidator.parse(req.body)
+      const body = UpdateClubReviewSchema.parse(req.body)
       await reviewService.reviewClub(user.serviceUserId, clubUuid, body)
       return res.status(204).send(null)
     }

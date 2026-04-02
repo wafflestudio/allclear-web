@@ -12,7 +12,7 @@ import {
 } from '../infra/database/entities'
 import { User } from '../domain/model/User'
 import { UserNotFoundError } from '../domain/error'
-import { UpdateProfileDto } from '../../pages/api/v1/users/me'
+import { UpdateProfileDto } from '../../src/lib/schemas/users'
 import { CollegeMajor } from '../domain/model/CollegeMajor'
 import { CollegeMajorEntity } from '../infra/database/entities/college-major.entity'
 

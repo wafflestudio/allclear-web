@@ -3,11 +3,7 @@ import jwt from 'jsonwebtoken'
 import { Provider } from 'server/provider'
 import { AuthService } from 'server/service/auth.service'
 import { ENV } from 'server/ENV'
-
-type AppleLoginCallbackPayload = {
-  id_token: string
-  user?: string
-}
+import { AppleLoginCallbackPayloadSchema } from 'src/lib/schemas/auth'
 
 type ResponseData = {
   token: string
@@ -20,7 +16,7 @@ export default async function handler(
   const authService = Provider.getService(AuthService)
 
   if (req.method == 'POST') {
-    const payload = req.body as AppleLoginCallbackPayload
+    const payload = AppleLoginCallbackPayloadSchema.parse(req.body)
     if (!payload.id_token) {
       return res.status(401).send('Unauthorized')
     }

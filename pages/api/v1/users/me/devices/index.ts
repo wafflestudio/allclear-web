@@ -3,12 +3,7 @@ import { z } from 'zod'
 import { Provider } from 'server/provider'
 import { UserService } from 'server/service/user.service'
 import { UserNotFoundError } from 'server/domain/error'
-
-const UpdateDeviceValidator = z.object({
-  pushId: z.string().uuid(),
-  appVersion: z.string().optional(),
-  info: z.any().optional(),
-})
+import { UpdateDeviceSchema } from 'src/lib/schemas/users'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -16,7 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method == 'PUT') {
       try {
         const user = await userService.getUserByAccountId(req.headers.user as string)
-        const { pushId, appVersion, info } = UpdateDeviceValidator.parse(req.body)
+        const { pushId, appVersion, info } = UpdateDeviceSchema.parse(req.body)
         await userService.updateDevice(user.id, pushId, {
           appVersion,
           info,

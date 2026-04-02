@@ -4,10 +4,7 @@ import { Provider } from 'server/provider'
 import { UserService } from 'server/service/user.service'
 import { UserNotFoundError } from 'server/domain/error'
 import { SlackService } from '../../../../../../server/service/slack.service'
-
-const UserVoiceValidator = z.object({
-  content: z.string().nonempty(),
-})
+import { UserVoiceSchema } from 'src/lib/schemas/users'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -16,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method == 'POST') {
       try {
         const user = await userService.getUserByAccountId(req.headers.user as string)
-        const { content } = UserVoiceValidator.parse(req.body)
+        const { content } = UserVoiceSchema.parse(req.body)
         await userService.throwUserVoice(user.serviceUserId, content)
         await slackService.sendMessage(
           'DRAGONITE',

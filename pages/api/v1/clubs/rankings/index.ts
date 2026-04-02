@@ -1,29 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { Provider } from 'server/provider'
 import { ReviewService } from 'server/service/review.service'
-import { z } from 'zod'
-
-const QueryValidator = z.object({
-  topk: z
-    .preprocess((d) => parseInt(d as string, 10), z.number().int().positive().min(1).max(20))
-    .optional(),
-})
+import { ClubRankingsQuerySchema, type ClubRanking } from 'src/lib/schemas/clubs'
 
 type ResponseData = {
   rankings: ClubRanking[]
   totalSize: number
-}
-
-export type ClubRanking = {
-  // 1, 2, 3, ...
-  ranking: number
-  clubId: string
-  clubName: string
-  clubFullName: string
-  totalReviews: number
-  rating: number
-  // top 3
-  keywords: string[]
 }
 
 export default async function handler(
@@ -34,7 +16,7 @@ export default async function handler(
     const reviewService = Provider.getService(ReviewService)
 
     if (req.method == 'GET') {
-      const { topk } = QueryValidator.parse(req.query)
+      const { topk } = ClubRankingsQuerySchema.parse(req.query)
       const rankings = await reviewService.getClubRankings(topk)
       return res.status(200).json({
         rankings: rankings,
