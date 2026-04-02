@@ -4,38 +4,8 @@ import { Provider } from 'server/provider'
 import { ClubService } from 'server/service/club.service'
 import { UserService } from 'server/service/user.service'
 import { UserNotFoundError } from 'server/domain/error'
-import {
-  CLUB_AFFILIATION_TYPES,
-  CLUB_CATEGORIES,
-  CLUB_COLLEGES,
-  CLUB_RECRUIT_TYPES,
-} from 'src/fixtures/club-options'
-
-const RequestBody = z.object({
-  name: z.string().nonempty().max(30),
-  fullName: z.string().nonempty().max(50),
-  type: z.enum(['교내', '연합']),
-  recruitType: z.enum(CLUB_RECRUIT_TYPES).nullable().optional(),
-  category: z.enum(CLUB_CATEGORIES),
-  tags: z
-    .array(
-      z
-        .string()
-        .nonempty()
-        .max(10)
-        .regex(/^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9_\-.]+$/),
-    )
-    .max(5),
-  college: z.enum(CLUB_COLLEGES),
-  affiliationType: z.enum(CLUB_AFFILIATION_TYPES),
-  collegeMajorId: z.number().int().nullable().optional(),
-  introduction: z.string().max(1000).nullable().optional(),
-  detail: z.string().max(5000).nullable().optional(),
-})
-
-const QueryValidator = z.object({
-  uuid: z.string().uuid(),
-})
+import { ClubUuidParamsSchema } from 'src/lib/schemas/clubs'
+import { ManagedClubUpdateSchema } from 'src/lib/schemas/managers'
 
 const api: NextApiHandler = async (req, res) => {
   try {
@@ -43,7 +13,7 @@ const api: NextApiHandler = async (req, res) => {
     const userService = Provider.getService(UserService)
 
     const user = await userService.getUserByAccountId(req.headers.user as string)
-    const { uuid: clubUuid } = QueryValidator.parse(req.query)
+    const { uuid: clubUuid } = ClubUuidParamsSchema.parse(req.query)
     if (req.method == 'GET') {
       const club = await clubService.getManagedClubByUuid(clubUuid, user.serviceUserId)
       return res.status(200).json(club)
@@ -52,7 +22,7 @@ const api: NextApiHandler = async (req, res) => {
     if (req.method === 'PUT') {
       const club = await clubService.getManagedClubByUuid(clubUuid, user.serviceUserId)
 
-      const body = RequestBody.parse(req.body)
+      const body = ManagedClubUpdateSchema.parse(req.body)
 
       await clubService.updateClub(club.uuid, {
         name: body.name,

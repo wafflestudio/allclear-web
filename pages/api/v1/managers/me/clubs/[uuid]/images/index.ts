@@ -11,6 +11,7 @@ import { ENV } from '../../../../../../../../server/ENV'
 import fetch from 'node-fetch'
 import sharp from 'sharp'
 import { encode } from 'blurhash'
+import { ClubUuidParamsSchema } from 'src/lib/schemas/clubs'
 
 export const maxDuration = 300 // 5 minutes (maximum for Vercel Pro)
 
@@ -28,7 +29,7 @@ async function r(
   return new Promise((resolve, reject) => {
     const busboy = Busboy({ headers: req.headers })
 
-    busboy.on('file', (fieldname, file, { filename, encoding, mimeType }) => {
+    busboy.on('file', (fieldname, file, { filename, mimeType }) => {
       const ext = filename.split('.').pop()
       const newFilename = `${uuidv4()}.${ext}`
       const imageUri = ENV.R2.GET_CLUB_IMAGE_PATH(newFilename)
@@ -57,10 +58,6 @@ async function r(
     req.pipe(busboy)
   })
 }
-
-const QueryValidator = z.object({
-  uuid: z.string().uuid(),
-})
 export default async function imageUploadHandler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const clubService = Provider.getService(ClubService)
@@ -68,7 +65,7 @@ export default async function imageUploadHandler(req: NextApiRequest, res: NextA
 
     if (req.method == 'POST') {
       const user = await userService.getUserByAccountId(req.headers.user as string)
-      const { uuid: clubUuid } = QueryValidator.parse(req.query)
+      const { uuid: clubUuid } = ClubUuidParamsSchema.parse(req.query)
       const club = await clubService.getManagedClubByUuid(clubUuid, user.serviceUserId)
 
       const persist = (clubId: string, imageUri: string, blurHash: string) =>

@@ -4,20 +4,9 @@ import { ReviewService } from 'server/service/review.service'
 import { UserService } from 'server/service/user.service'
 import { z, ZodIssue } from 'zod'
 import { UserNotFoundError } from 'server/domain/error'
+import { ClubUuidParamsSchema, type MyReview } from 'src/lib/schemas/clubs'
 
 type ResponseData = MyReview | null
-
-export type MyReview = {
-  rating: number
-  reviewKeywordIds: string[]
-  content: string
-  createdAt: string
-  updatedAt: string
-}
-
-const QueryValidator = z.object({
-  uuid: z.string().uuid(),
-})
 
 export default async function handler(
   req: NextApiRequest,
@@ -28,7 +17,7 @@ export default async function handler(
     const reviewService = Provider.getService(ReviewService)
 
     if (req.method == 'GET') {
-      const { uuid: clubUuid } = QueryValidator.parse(req.query)
+      const { uuid: clubUuid } = ClubUuidParamsSchema.parse(req.query)
       const user = await userService.getUserByAccountId(req.headers.user as string)
       const myReview: MyReview | null = await reviewService.getMyReview(
         user.serviceUserId,

@@ -5,13 +5,8 @@ import { ClubService } from 'server/service/club.service'
 import { SearchService } from 'server/service/search.service'
 import { UserNotFoundError } from 'server/domain/error'
 import { UserService } from 'server/service/user.service'
-import { z } from 'zod'
 import { SlackService } from '../../../../../../server/service/slack.service'
-
-const ClubManagerRegisterRequestValidator = z.object({
-  clubId: z.string().uuid().optional(),
-  clubName: z.string().nonempty().optional(),
-})
+import { ClubManagerRegisterRequestSchema } from 'src/lib/schemas/managers'
 
 type ResponseData = {
   clubs: Club[]
@@ -41,7 +36,7 @@ export default async function handler(
       })
     }
     if (req.method === 'POST') {
-      const { clubId, clubName } = ClubManagerRegisterRequestValidator.parse(req.body)
+      const { clubId, clubName } = ClubManagerRegisterRequestSchema.parse(req.body)
       await clubService.clubManagerRegisterRequest(user.serviceUserId, {
         clubId,
         clubName,

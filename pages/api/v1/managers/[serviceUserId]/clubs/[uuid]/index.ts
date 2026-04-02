@@ -4,18 +4,14 @@ import { Provider } from 'server/provider'
 import { ClubService } from 'server/service/club.service'
 import { NotFoundError } from 'server/domain/error'
 import { UserService } from '../../../../../../../server/service/user.service'
-
-const QueryValidator = z.object({
-  serviceUserId: z.string().uuid(),
-  uuid: z.string().uuid(),
-})
+import { ManagerClubParamsSchema } from 'src/lib/schemas/managers'
 
 const api: NextApiHandler = async (req, res) => {
   try {
     const clubService = Provider.getService(ClubService)
     const userService = Provider.getService(UserService)
 
-    const { serviceUserId, uuid: clubUuid } = QueryValidator.parse(req.query)
+    const { serviceUserId, uuid: clubUuid } = ManagerClubParamsSchema.parse(req.query)
     await userService.serviceUserShouldExist(serviceUserId)
 
     if (req.method === 'POST') {

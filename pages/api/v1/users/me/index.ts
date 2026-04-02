@@ -5,22 +5,7 @@ import { UserService } from 'server/service/user.service'
 import { UserNotFoundError } from '../../../../../server/domain/error'
 import { z, ZodIssue } from 'zod'
 import { bearerToken } from '../../../../../server/util/token'
-
-const UpdateProfile = z.object({
-  nickname: z.string().max(32).optional(),
-  name: z.string().max(32).optional(),
-  email: z.string().max(80).optional(),
-  gender: z.enum(['F', 'M']).optional(),
-  birthDate: z.string().max(10).nullable().optional(),
-  birthYear: z.string().min(4).max(4).optional(),
-  college: z.string().max(40).optional(),
-  major: z.string().max(40).optional(),
-  collegeMajorId: z.number().nullable().optional(),
-  admissionClass: z.number().nullable().optional(),
-  grade: z.number().nullable().optional(),
-})
-
-export type UpdateProfileDto = z.infer<typeof UpdateProfile>
+import { UpdateProfileSchema } from 'src/lib/schemas/users'
 
 type ResponseData = {
   profile: User
@@ -50,7 +35,7 @@ export default async function handler(
     }
     if (req.method === 'PUT') {
       const user = await userService.getUserByAccountId(req.headers.user as string)
-      const updateProfileDto = UpdateProfile.parse(req.body)
+      const updateProfileDto = UpdateProfileSchema.parse(req.body)
       await userService.updateProfile(user, updateProfileDto)
       return res.status(204).end()
     }
