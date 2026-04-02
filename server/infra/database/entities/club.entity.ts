@@ -1,5 +1,6 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { CollegeMajorEntity } from './college-major.entity'
+import type { ClubStatus } from 'src/common/constants/club-status'
 
 @Entity('club')
 @Index('ux_club_uuid', ['uuid'])
@@ -90,7 +91,7 @@ export class ClubEntity {
   approvedAt: string | null
 
   @Column({ type: 'varchar', default: 'PENDING', name: 'status' })
-  status: string
+  status: ClubStatus
 
   @Column({ type: 'varchar', default: '', nullable: true, name: 'reject_reason' })
   rejectReason: string | null

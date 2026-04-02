@@ -3,7 +3,7 @@ import { Provider } from 'server/provider'
 import { ReviewService } from 'server/service/review.service'
 import { UserService } from 'server/service/user.service'
 import { z } from 'zod'
-import { UserNotFoundError } from 'server/domain/error'
+import { NotFoundError, UserNotFoundError } from 'server/domain/error'
 import { ClubUuidParamsSchema, UpdateClubReviewSchema } from 'src/lib/schemas/clubs'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -19,6 +19,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(204).send(null)
     }
   } catch (err) {
+    if (err instanceof NotFoundError) {
+      return res.status(404).send('club not found')
+    }
     if (err instanceof UserNotFoundError) {
       return res.status(404).send('user not found')
     }

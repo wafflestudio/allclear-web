@@ -1,4 +1,4 @@
-import { In, Repository } from 'typeorm'
+import { In, IsNull, Repository } from 'typeorm'
 import { InjectRepository, Service } from '../provider'
 import { ClubEntity } from '../infra/database/entities'
 import { UserClubReviewEntity } from '../infra/database/entities/user-club-review.entity'
@@ -6,6 +6,8 @@ import { ClubReviewKeywordEntity } from '../infra/database/entities/club-review-
 import { ClubReviewKeywordCategoryEntity } from '../infra/database/entities/user-club-review-category.entity'
 import { ReviewKeywordCategory } from '../../src/lib/schemas/common'
 import { ClubRanking, MyReview } from '../../src/lib/schemas/clubs'
+import { NotFoundError } from '../domain/error'
+import { PUBLIC_CLUB_STATUS } from 'src/common/constants/club-status'
 
 @Service
 export class ReviewService {
@@ -24,7 +26,7 @@ export class ReviewService {
     review: { rating?: number; reviewKeywordIds?: string[]; content?: string },
   ) {
     const { rating, reviewKeywordIds, content } = review
-    await this.clubRepository.findOneByOrFail({ uuid: clubId })
+    await this.assertPublicClubExists(clubId)
 
     const userClubReview = await this.userClubReviewRepository.findOneBy({
       serviceUserId,
@@ -70,6 +72,7 @@ export class ReviewService {
   }
 
   public async getMyReview(serviceUserId: string, clubId: string): Promise<MyReview | null> {
+    await this.assertPublicClubExists(clubId)
     const review = await this.userClubReviewRepository.findOneBy({
       clubId,
       serviceUserId,
@@ -95,7 +98,7 @@ export class ReviewService {
     }[] = await this.userClubReviewRepository.query(`
 SELECT ucr.club_id, COUNT(ucr.id) AS total_reviews, COALESCE(AVG(ucr.rating), 0) AS rating, MAX(c.name) AS club_name, MAX(c.full_name) AS club_full_name 
 FROM user_club_review ucr 
-JOIN club c ON ucr.club_id = c.uuid AND c.deleted_at IS NULL    
+JOIN club c ON ucr.club_id = c.uuid AND c.deleted_at IS NULL AND c.status = 'APPROVED'
 GROUP BY club_id 
 ORDER BY COUNT(*) DESC 
 LIMIT ${topk}
@@ -139,5 +142,16 @@ LIMIT ${topk}
       .sort((a, b) => b[1] - a[1])
       .slice(0, topN)
       .map((it) => it[0])
+  }
+
+  private async assertPublicClubExists(clubId: string) {
+    const club = await this.clubRepository.findOneBy({
+      uuid: clubId,
+      status: PUBLIC_CLUB_STATUS,
+      deletedAt: IsNull(),
+    })
+    if (!club) {
+      throw new NotFoundError('club not found')
+    }
   }
 }

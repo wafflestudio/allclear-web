@@ -6,6 +6,7 @@ import { disassemble } from 'es-hangul'
 import leven from 'leven'
 import { ClubService } from './club.service'
 import { sortByPopularAndEachRandom } from '../util/club-sort'
+import { PUBLIC_CLUB_STATUS } from 'src/common/constants/club-status'
 
 type ClubSearchResponse = {
   clubs: Club[]
@@ -80,7 +81,11 @@ export class SearchService {
   }
 
   async findCandidatesByName(clubName: string | undefined, total = 5): Promise<Club[]> {
-    const clubs = await this.clubRepository.find()
+    const clubs = await this.clubRepository.find({
+      where: {
+        deletedAt: IsNull(),
+      },
+    })
     let out = clubs.filter(
       (it) => it.name.includes(clubName ?? '') || it.fullName.includes(clubName ?? ''),
     )
@@ -100,16 +105,19 @@ export class SearchService {
       where: [
         {
           name: ILike(`%${query}%`),
+          status: PUBLIC_CLUB_STATUS,
           deletedAt: IsNull(),
         },
         {
           fullName: ILike(`%${query}%`),
+          status: PUBLIC_CLUB_STATUS,
           deletedAt: IsNull(),
         },
         {
           tags: Raw((tagsAlias) => `ARRAY_TO_STRING(${tagsAlias}, ',') ILIKE :query`, {
             query: `%${query}%`,
           }),
+          status: PUBLIC_CLUB_STATUS,
           deletedAt: IsNull(),
         },
       ],
@@ -162,6 +170,7 @@ export class SearchService {
         tags: true,
       },
       where: {
+        status: PUBLIC_CLUB_STATUS,
         deletedAt: IsNull(),
       },
     })

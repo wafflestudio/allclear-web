@@ -46,6 +46,7 @@ export const config = {
   matcher: [
     '/api/v1/users/me',
     '/api/v1/users/me/clubs',
+    '/api/v1/users/me/club-creation-requests',
     '/api/v1/users/me/clubs/saved',
     '/api/v1/users/me/devices',
     '/api/v1/users/me/voices',

@@ -29,7 +29,9 @@ import {
 } from 'src/lib/schemas/clubs'
 import {
   ClubImageUploadSchema,
+  ClubCreationDecisionSchema,
   ClubManagerRegisterRequestSchema,
+  CreateClubCreationRequestSchema,
   ManagedClubsResponseSchema,
   ManagedClubUpdateSchema,
   ManagerClubParamsSchema,
@@ -512,6 +514,36 @@ registry.registerPath({
 })
 
 registry.registerPath({
+  method: 'post',
+  path: '/api/v1/users/me/club-creation-requests',
+  tags: ['Users'],
+  summary: '동아리 생성 요청',
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: CreateClubCreationRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: '생성 요청 성공',
+      content: {
+        'application/json': {
+          schema: ClubSchema,
+        },
+      },
+    },
+    400: validationErrorResponse,
+    404: notFoundResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
   method: 'get',
   path: '/api/v1/users/me/clubs/saved',
   tags: ['Users'],
@@ -613,6 +645,36 @@ registry.registerPath({
     405: {
       description: '허용되지 않은 메서드',
     },
+  },
+})
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/club-creation-requests/{uuid}/decision',
+  tags: ['Managers'],
+  summary: '동아리 생성 요청 승인 또는 반려',
+  request: {
+    params: ClubUuidParamsSchema,
+    body: {
+      content: {
+        'application/json': {
+          schema: ClubCreationDecisionSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: '처리 성공',
+      content: {
+        'application/json': {
+          schema: ClubSchema,
+        },
+      },
+    },
+    400: validationErrorResponse,
+    404: notFoundResponse,
+    500: internalServerErrorResponse,
   },
 })
 
