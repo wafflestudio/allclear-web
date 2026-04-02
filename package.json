@@ -28,7 +28,6 @@
     "class-transformer": "^0.5.1",
     "clsx": "^1.2.1",
     "dayjs": "^1.11.9",
-    "es-hangul": "^2.3.8",
     "jose": "^5.2.0",
     "jsonwebtoken": "^9.0.2",
     "leven": "^4.0.0",

@@ -6,9 +6,6 @@ import { Club } from 'server/domain/model/Club'
 type ResponseData = {
   clubs: Club[]
   totalSize: number
-  query: string
-  correctedQuery: string | null
-  isTypoCorrected: boolean
 }
 
 export default async function handler(
@@ -23,15 +20,10 @@ export default async function handler(
       if (!query) {
         return res.status(400).send('query is required')
       }
-      const { clubs, correctedQuery, isTypoCorrected } = await clubService.searchWithTypoCorrection(
-        query,
-      )
+      const clubs = await clubService.search(query)
       return res.status(200).json({
         clubs: clubs,
         totalSize: clubs.length,
-        query,
-        correctedQuery,
-        isTypoCorrected,
       })
     }
   } catch (err) {
