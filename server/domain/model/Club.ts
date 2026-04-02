@@ -1,6 +1,5 @@
 import { ClubEntity } from '../../infra/database/entities'
 import { ENV } from '../../ENV'
-import { CollegeMajor } from './CollegeMajor'
 
 export type ReviewKeyword = {
   id: string
@@ -21,9 +20,6 @@ export type Club = {
   type: string
   category: string
   college: string
-  affiliationType: string
-  collegeMajorId: number | null
-  collegeMajor: CollegeMajor | null
   recruitType: string
   isPopular: boolean
   hasDongbang: boolean
@@ -58,15 +54,6 @@ export const toClubDomain = (
   type: it.type,
   category: it.category,
   college: it.college ?? '',
-  affiliationType: it.affiliationType,
-  collegeMajorId: it.collegeMajorId,
-  collegeMajor: it.collegeMajor
-    ? {
-        id: it.collegeMajor.id,
-        college: it.collegeMajor.college,
-        major: it.collegeMajor.major,
-      }
-    : null,
   recruitType: it.recruitType ?? '',
   isPopular: it.isPopular,
   hasDongbang: it.hasDongbang,

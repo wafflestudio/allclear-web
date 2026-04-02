@@ -1,10 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { Controller, SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import { useMutation, useQuery } from 'react-query'
-import { Club, ClubCollegeMajor } from '../../../src/entities/club'
+import { Club } from '../../../src/entities/club'
 import {
-  CLUB_AFFILIATION_TYPES,
   CLUB_CATEGORIES,
   CLUB_COLLEGES,
   CLUB_RECRUIT_TYPES,
@@ -20,11 +19,6 @@ import { GetServerSidePropsContext, Metadata, ResolvingMetadata } from 'next'
 
 const ReactQuill = dynamic(() => import('react-quill'), { ssr: false })
 
-type CollegeMajorsResponse = {
-  majors: ClubCollegeMajor[]
-  totalSize: number
-}
-
 const fetchManageClub = async (uuid: Club['uuid'], authorization: string): Promise<Club> => {
   const response = await fetch(`/api/v1/managers/me/clubs/${uuid}`, {
     headers: { 'x-authorization': authorization },
@@ -34,16 +28,6 @@ const fetchManageClub = async (uuid: Club['uuid'], authorization: string): Promi
     return res.json() as Promise<Club>
   })
   return response
-}
-
-const fetchCollegeMajors = async (): Promise<ClubCollegeMajor[]> => {
-  const response = await fetch('/api/v1/users/majors?includeNullMajor=true').then((res) => {
-    if (!res.ok) throw new Error('Error fetching college majors')
-
-    return res.json() as Promise<CollegeMajorsResponse>
-  })
-
-  return response.majors
 }
 
 export async function generateMetadata(
@@ -126,8 +110,6 @@ const EditClub = ({ club, authorization, updateClubMutation }: Props) => {
       recruitType: club.recruitType as any,
       category: club.category as any,
       college: club.college as any,
-      affiliationType: (club.affiliationType || '기타') as any,
-      collegeMajorId: club.collegeMajorId ?? null,
       tags: club.tags,
       introduction: club.introduction,
       detail: club.article as any,
@@ -136,7 +118,6 @@ const EditClub = ({ club, authorization, updateClubMutation }: Props) => {
     resolver: zodResolver(UpdateManageClubRequestValidator),
   })
   const [articleUpdated, setArticleUpdated] = useState(false)
-  const { data: collegeMajors = [] } = useCollegeMajors()
 
   const { fields, append, remove } = useFieldArray<string[]>({
     // @ts-ignore
@@ -158,19 +139,16 @@ const EditClub = ({ club, authorization, updateClubMutation }: Props) => {
       ...rest,
       detail: articleUpdated ? rest.detail : club.article,
       recruitType: rest.recruitType === '선택 안함' ? null : (rest.recruitType as any),
-      collegeMajorId: rest.collegeMajorId ?? null,
       introduction: rest.introduction?.trim(),
       uuid: club.uuid,
       authorization,
     }
 
-    const imageReq = image
-      ? {
-          image,
-          uuid: club.uuid,
-          authorization,
-        }
-      : undefined
+    const imageReq: UpdateManageClubImageRequest = {
+      image,
+      uuid: club.uuid,
+      authorization,
+    }
     return await updateClubMutation.mutateAsync({ clubReq, imageReq }).then(() => {
       alert('동아리 프로필을 업데이트했어요!')
     })
@@ -309,7 +287,7 @@ const EditClub = ({ club, authorization, updateClubMutation }: Props) => {
                 htmlFor="college"
                 className="inline-flex items-center mb-2 text-sm font-medium text-gray-900 "
               >
-                레거시 소속 단과대학 (필수)
+                소속 단과대학 (필수)
               </label>
               <select
                 id="college"
@@ -322,69 +300,8 @@ const EditClub = ({ club, authorization, updateClubMutation }: Props) => {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-gray-500">
-                기존 로직 호환을 위해 유지되는 필드입니다. 아래 신규 소속 정보와 독립적으로
-                수정됩니다.
-              </p>
               {errors.college && (
                 <p className="mt-1 text-xs text-red-500">소속 단과대학을 선택해주세요</p>
-              )}
-            </div>
-            <div>
-              <label
-                htmlFor="affiliationType"
-                className="inline-flex items-center mb-2 text-sm font-medium text-gray-900 "
-              >
-                동아리 종류 (신규)
-              </label>
-              <select
-                id="affiliationType"
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 "
-                {...register('affiliationType', { required: true })}
-              >
-                {CLUB_AFFILIATION_TYPES.map((affiliationType) => (
-                  <option key={affiliationType} value={affiliationType}>
-                    {affiliationType}
-                  </option>
-                ))}
-              </select>
-              {errors.affiliationType && (
-                <p className="mt-1 text-xs text-red-500">동아리 종류를 선택해주세요</p>
-              )}
-            </div>
-            <div className="sm:col-span-2">
-              <label
-                htmlFor="collegeMajorId"
-                className="inline-flex items-center mb-2 text-sm font-medium text-gray-900 "
-              >
-                신규 소속 정보
-              </label>
-              <Controller
-                name="collegeMajorId"
-                control={control}
-                render={({ field }) => (
-                  <select
-                    id="collegeMajorId"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 "
-                    value={field.value ?? ''}
-                    onChange={(event) =>
-                      field.onChange(event.target.value ? Number(event.target.value) : null)
-                    }
-                  >
-                    <option value="">선택 안함</option>
-                    {collegeMajors.map((collegeMajor) => (
-                      <option key={collegeMajor.id} value={collegeMajor.id}>
-                        {formatCollegeMajorLabel(collegeMajor)}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                `college_major_id` 대신 실제 소속 내용을 보여주며, 동아리 종류와 별도로 관리됩니다.
-              </p>
-              {errors.collegeMajorId && (
-                <p className="mt-1 text-xs text-red-500">신규 소속 정보를 다시 확인해주세요</p>
               )}
             </div>
             <div className="sm:col-span-2">
@@ -393,8 +310,8 @@ const EditClub = ({ club, authorization, updateClubMutation }: Props) => {
               </label>
               <ul id="tags" className="flex flex-col gap-1">
                 {fields.map((item, index) => (
-                  <li key={item.id} className="flex flex-col gap-1">
-                    <div className="flex justify-between items-center">
+                  <Fragment key={item.id}>
+                    <li className="flex justify-between items-center">
                       <Controller
                         render={({ field }) => (
                           <input
@@ -412,13 +329,13 @@ const EditClub = ({ club, authorization, updateClubMutation }: Props) => {
                       >
                         태그 삭제
                       </button>
-                    </div>
+                    </li>
                     {errors.tags?.[index] && (
                       <p className="mt-1 text-xs text-red-500">
                         해시태그는 공백과 # 없이 10자 이내 한영문/숫자/_로 입력해주세요
                       </p>
                     )}
-                  </li>
+                  </Fragment>
                 ))}
               </ul>
               <button
@@ -576,11 +493,6 @@ const useManageClub = (uuid: Club['uuid'], authorization: string) => {
   )
 }
 
-const useCollegeMajors = () =>
-  useQuery(['collegeMajorsForClubEdit'], fetchCollegeMajors, {
-    staleTime: 60 * 1000,
-  })
-
 const useUpdateClub = () => {
   const clubService = useMemo(() => {
     const clubRepository = getClubRepository()
@@ -593,15 +505,12 @@ const useUpdateClub = () => {
       imageReq,
     }: {
       clubReq: UpdateManageClubRequest
-      imageReq?: UpdateManageClubImageRequest
+      imageReq: UpdateManageClubImageRequest
     }) => {
       return clubService.updateManageClub(clubReq, imageReq)
     },
   )
   return mutation
 }
-
-const formatCollegeMajorLabel = (collegeMajor: ClubCollegeMajor) =>
-  collegeMajor.major ? `${collegeMajor.college} / ${collegeMajor.major}` : collegeMajor.college
 
 export default ClubEditPage

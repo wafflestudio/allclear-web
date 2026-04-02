@@ -1,4 +1,6 @@
 export * from './account.entity'
+export * from './apple-account-migration.entity'
+export * from './apple-account-migration-status.enum'
 export * from './user.entity'
 export * from './account-user.entity'
 export * from './service-user.entity'

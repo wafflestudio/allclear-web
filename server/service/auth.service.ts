@@ -6,6 +6,8 @@ import {
   AccountEntity,
   AccountType,
   AccountUserEntity,
+  AppleAccountMigrationEntity,
+  AppleAccountMigrationStatus,
   SERVICE,
   ServiceUserEntity,
   UserEntity,
@@ -21,6 +23,8 @@ type AccountId = string
 export class AuthService {
   @InjectRepository(AccountEntity)
   private readonly accountRepository: Repository<AccountEntity>
+  @InjectRepository(AppleAccountMigrationEntity)
+  private readonly appleAccountMigrationRepository: Repository<AppleAccountMigrationEntity>
   @InjectRepository(UserEntity)
   private readonly userRepository: Repository<UserEntity>
   @InjectRepository(AccountUserEntity)
@@ -176,10 +180,12 @@ export class AuthService {
   async createAppleUser({
     accountId = '',
     email = '',
+    transferSub = '',
     user = '{}',
   }: {
     accountId?: string
     email?: string
+    transferSub?: string
     user?: string
   }) {
     console.info(`Apple Account ID: ${accountId}`)
@@ -190,11 +196,17 @@ export class AuthService {
       return account.id
     }
 
-    let parsedUser: Record<string, any> = {}
-    try {
-      parsedUser = JSON.parse(user || '{}')
-    } catch (err) {
-      console.error('Failed to parse Apple user payload', err)
+    const parsedUser = this.parseAppleUser(user)
+    if (transferSub) {
+      const migratedAccountId = await this.migrateAppleAccount({
+        nextSub: accountId,
+        transferSub,
+        email,
+        socialAccountInfo: parsedUser,
+      })
+      if (migratedAccountId) {
+        return migratedAccountId
+      }
     }
 
     // Names are only shown in the first time.
@@ -208,6 +220,88 @@ export class AuthService {
       name: (lastName + firstName).trim(),
       email: email,
       socialAccountInfo: parsedUser,
+    })
+  }
+
+  private parseAppleUser(user: string): Record<string, any> {
+    try {
+      return JSON.parse(user || '{}')
+    } catch (err) {
+      console.error('Failed to parse Apple user payload', err)
+      return {}
+    }
+  }
+
+  private async migrateAppleAccount({
+    nextSub,
+    transferSub,
+    email,
+    socialAccountInfo,
+  }: {
+    nextSub: string
+    transferSub: string
+    email: string
+    socialAccountInfo: object
+  }): Promise<string | null> {
+    const migration = await this.appleAccountMigrationRepository.findOne({
+      where: [{ transferIdentifier: transferSub }, { oldSub: transferSub }],
+    })
+    if (!migration) {
+      return null
+    }
+
+    const account =
+      (await this.accountRepository.findOneBy({
+        id: migration.accountId,
+        type: AccountType.APPLE,
+      })) ??
+      (await this.accountRepository.findOneBy({
+        type: AccountType.APPLE,
+        username: migration.oldSub,
+      }))
+
+    if (!account) {
+      await this.appleAccountMigrationRepository.update(migration.id, {
+        status: AppleAccountMigrationStatus.FAILED,
+        lastError: `Account not found for transfer_sub ${transferSub}`,
+      })
+      return null
+    }
+
+    account.username = nextSub
+    if (Object.keys(socialAccountInfo).length > 0) {
+      account.socialInfo = socialAccountInfo
+    }
+    await this.accountRepository.save(account)
+    await this.syncAppleUserProfile(account.id, email)
+
+    const now = new Date().toISOString()
+    await this.appleAccountMigrationRepository.update(migration.id, {
+      accountId: account.id,
+      newSub: nextSub,
+      status: AppleAccountMigrationStatus.MIGRATED,
+      newSubCollectedAt: migration.newSubCollectedAt ?? now,
+      migratedAt: now,
+      lastError: null,
+    })
+
+    return account.id
+  }
+
+  private async syncAppleUserProfile(accountId: string, email: string) {
+    if (!email) {
+      return
+    }
+
+    const accountUser = await this.accountUserRepository.findOneBy({
+      accountId,
+    })
+    if (!accountUser) {
+      return
+    }
+
+    await this.userRepository.update(accountUser.userId, {
+      email,
     })
   }
 
