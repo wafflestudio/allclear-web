@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { Provider } from 'server/provider'
-import { ClubService } from 'server/service/club.service'
+import { SearchService } from 'server/service/search.service'
 import { Club } from 'server/domain/model/Club'
 
 type ResponseData = {
@@ -16,14 +16,14 @@ export default async function handler(
   res: NextApiResponse<ResponseData | string>,
 ) {
   try {
-    const clubService = Provider.getService(ClubService)
+    const searchService = Provider.getService(SearchService)
 
     if (req.method == 'GET') {
       const query = req.query.query as string
       if (!query) {
         return res.status(400).send('query is required')
       }
-      const { clubs, correctedQuery, isTypoCorrected } = await clubService.searchWithTypoCorrection(
+      const { clubs, correctedQuery, isTypoCorrected } = await searchService.searchWithTypoCorrection(
         query,
       )
       return res.status(200).json({
