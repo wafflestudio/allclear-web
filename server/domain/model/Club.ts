@@ -34,6 +34,8 @@ export type Club = {
   blurHash: string | null
   article: string
   articleUploadedAt: string | null
+  status: string
+  rejectReason: string
   avgRating: number
   totalReviews: number
   reviewKeywords: ReviewKeyword[]
@@ -77,6 +79,8 @@ export const toClubDomain = (
   blurHash: it.blurHash,
   article: it.article ?? '',
   articleUploadedAt: it.articleUploadedAt,
+  status: it.status,
+  rejectReason: it.rejectReason ?? '',
   avgRating: review?.avgRating ?? 0,
   totalReviews: review?.totalReviews ?? 0,
   reviewKeywords: review?.reviewKeywords ?? [],
