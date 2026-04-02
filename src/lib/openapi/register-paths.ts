@@ -515,8 +515,8 @@ registry.registerPath({
 
 registry.registerPath({
   method: 'post',
-  path: '/api/v1/users/me/club-creation-requests',
-  tags: ['Users'],
+  path: '/api/v1/club-creation-requests',
+  tags: ['Managers'],
   summary: '동아리 생성 요청',
   security: [{ bearerAuth: [] }],
   request: {
