@@ -3,7 +3,6 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies'
 import {
   AccountEntity,
   AccountUserEntity,
-  AppleAccountMigrationEntity,
   ClubEntity,
   DeviceEntity,
   ServiceUserEntity,
@@ -26,7 +25,6 @@ export const MAIN_DATA_SOURCE_OPTIONS: DataSourceOptions = {
   port: ENV.DB.PORT,
   entities: [
     AccountEntity,
-    AppleAccountMigrationEntity,
     UserEntity,
     AccountUserEntity,
     ServiceUserEntity,
