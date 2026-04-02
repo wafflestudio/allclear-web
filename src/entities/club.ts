@@ -26,4 +26,6 @@ export type Club = {
   imageUri: string
   article: string
   articleUploadedAt: string | null
+  status: string
+  rejectReason: string
 }

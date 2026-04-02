@@ -107,6 +107,8 @@ export const ClubSchema = z
     blurHash: z.string().nullable(),
     article: z.string(),
     articleUploadedAt: z.string().nullable(),
+    status: z.string(),
+    rejectReason: z.string(),
     avgRating: z.number(),
     totalReviews: z.number().int(),
     reviewKeywords: z.array(ReviewKeywordSchema),

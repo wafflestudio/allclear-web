@@ -89,6 +89,9 @@ export class ClubEntity {
   @Column({ type: 'timestamp without time zone', nullable: true, name: 'approved_at' })
   approvedAt: string | null
 
-  @Column({ type: 'boolean', default: false, name: 'is_approved' })
-  isApproved: boolean
+  @Column({ type: 'varchar', default: 'PENDING', name: 'status' })
+  status: string
+
+  @Column({ type: 'varchar', default: '', nullable: true, name: 'reject_reason' })
+  rejectReason: string | null
 }
