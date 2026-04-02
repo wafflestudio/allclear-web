@@ -1,4 +1,4 @@
-import { ILike, In, IsNull, Raw, Repository } from 'typeorm'
+import { In, Repository } from 'typeorm'
 import { InjectRepository, Service } from '../provider'
 import { ClubEntity, UserActivityLogEntity, UserActivityLogType } from '../infra/database/entities'
 import { ClubCategory } from '../domain/model/ClubCategory'
@@ -11,36 +11,11 @@ import { ClubManagerEntity } from '../infra/database/entities/club-manager.entit
 import { UserSavedClubEntity } from '../infra/database/entities/user-saved-club.entity'
 import { ClubManagerRegisterRequestEntity } from '../infra/database/entities/club-manager-register-request.entity'
 import dayjs from 'dayjs'
-import { disassemble } from 'es-hangul'
-import leven from 'leven'
 import { NotFoundError } from '../domain/error'
+import { sortByPopularAndEachRandom } from '../util/club-sort'
 
 type ClubUuid = string
 type ReviewKeywordId = string
-type ClubSearchResponse = {
-  clubs: Club[]
-  correctedQuery: string | null
-  isTypoCorrected: boolean
-}
-type ClubCorrectionSource = Pick<ClubEntity, 'name' | 'fullName' | 'tags'>
-type CorrectionCandidate = {
-  term: string
-  normalizedTerm: string
-  decomposedTerm: string
-}
-
-const sortByPopularAndEachRandom = (clubs: Club[]) =>
-  clubs.sort((a, b) => {
-    if (a.isPopular && !b.isPopular) {
-      return -1
-    }
-    if (!a.isPopular && b.isPopular) {
-      return 1
-    }
-    return (
-      Math.random() - 0.5 + (a.imageUri && !b.imageUri ? -0.2 : !a.imageUri && b.imageUri ? 0.2 : 0)
-    )
-  })
 
 @Service
 export class ClubService {
@@ -172,236 +147,6 @@ export class ClubService {
     return entities.map((it) => toClubDomain(it, clubReview.get(it.uuid)))
   }
 
-  async search(query: string): Promise<Club[]> {
-    this.userActivityLogRepository
-      .insert({
-        type: UserActivityLogType.CALL_SEARCH_CLUBS_API,
-        params: JSON.stringify({ query }),
-      })
-      .catch(console.error)
-    return this.searchByQuery(query)
-  }
-
-  async searchWithTypoCorrection(query: string): Promise<ClubSearchResponse> {
-    this.userActivityLogRepository
-      .insert({
-        type: UserActivityLogType.CALL_SEARCH_CLUBS_API,
-        params: JSON.stringify({ query }),
-      })
-      .catch(console.error)
-    const clubs = await this.searchByQuery(query)
-    if (clubs.length > 0) {
-      return {
-        clubs,
-        correctedQuery: null,
-        isTypoCorrected: false,
-      }
-    }
-
-    const correctedQuery = await this.findCorrectedSearchQuery(query)
-    if (!correctedQuery || correctedQuery === query ) {
-      return {
-        clubs: [],
-        correctedQuery: null,
-        isTypoCorrected: false,
-      }
-    }
-
-    const correctedClubs = await this.searchByQuery(correctedQuery)
-    if (correctedClubs.length === 0) {
-      return {
-        clubs: [],
-        correctedQuery: null,
-        isTypoCorrected: false,
-      }
-    }
-
-    return {
-      clubs: correctedClubs,
-      correctedQuery,
-      isTypoCorrected: true,
-    }
-  }
-
-  private async searchByQuery(query: string): Promise<Club[]> {
-    const entities = await this.clubRepository.find({
-      where: [
-        {
-          // name ILIKE '%query%'
-          name: ILike(`%${query}%`),
-          deletedAt: IsNull(),
-        },
-        {
-          // full_name ILIKE '%query%'
-          fullName: ILike(`%${query}%`),
-          deletedAt: IsNull(),
-        },
-        {
-          // ARRAY_TO_STRING(tags, ',') ILIKE '%query%'
-          tags: Raw((tagsAlias) => `ARRAY_TO_STRING(${tagsAlias}, ',') ILIKE :query`, {
-            query: `%${query}%`,
-          }),
-          deletedAt: IsNull(),
-        },
-      ],
-    })
-    const clubReview = await this.getClubReviews(entities.map((it) => it.uuid))
-    const clubs = entities.map((it) => toClubDomain(it, clubReview.get(it.uuid)))
-    return sortByPopularAndEachRandom(clubs)
-  }
-
-  private normalizeSearchTerm(term: string): string {
-    return term.trim().toLowerCase().replace(/\s+/g, '')
-  }
-
-  private decomposeToJamo(term: string): string {
-    return disassemble(term).replace(/\s+/g, '')
-  }
-
-  private calculateJamoSimilarity(query: string, candidate: string): number {
-    const maxLength = Math.max(query.length, candidate.length)
-    if (maxLength === 0) {
-      return 0
-    }
-    return 1 - leven(query, candidate) / maxLength
-  }
-
-  private minimumJamoSimilarity(jamoLength: number): number {
-    if (jamoLength <= 4) {
-      return 0.8
-    }
-    if (jamoLength <= 8) {
-      return 0.75
-    }
-    return 0.7
-  }
-
-  private async findCorrectedSearchQuery(query: string): Promise<string | null> {
-    
-    // Step 1. query 예쁘게 가공하기
-    if (query.trim().length < 2) {
-      return null
-    }
-    const normalizedQuery = this.normalizeSearchTerm(query)
-    const decomposedQuery = this.decomposeToJamo(normalizedQuery)
-    if (!decomposedQuery) {
-      return null
-    }
-
-    // Step 2. clubs에서 필요한 정보 가져오기
-    const clubs = await this.clubRepository.find({
-      select: {
-        name: true,
-        fullName: true,
-        tags: true,
-      },
-      where: {
-        deletedAt: IsNull(),
-      },
-    })
-
-    // Step 3. 교정될 문자열 후보 가져오기
-    const candidateTerms = this.collectCorrectionCandidates(clubs, normalizedQuery.length)
-
-    // Step 4. 최고의 문자열 선정하기
-    const bestCandidate = candidateTerms
-      .map((candidate) => {
-        return {
-          ...candidate,
-          similarity: this.calculateJamoSimilarity(decomposedQuery, candidate.decomposedTerm),
-          lengthDiff: Math.abs(candidate.decomposedTerm.length - decomposedQuery.length),
-        }
-      })
-      .filter((it) => it.normalizedTerm !== normalizedQuery)
-      .sort(
-        (a, b) =>
-          b.similarity - a.similarity ||
-          a.lengthDiff - b.lengthDiff ||
-          a.normalizedTerm.length - b.normalizedTerm.length,
-      )[0]
-
-    if (!bestCandidate) {
-      return null
-    }
-
-    if (bestCandidate.similarity < this.minimumJamoSimilarity(decomposedQuery.length)) {
-      return null
-    }
-
-    return bestCandidate.term
-  }
-
-  private collectCorrectionCandidates(
-    clubs: ClubCorrectionSource[],
-    queryLength: number,
-  ): CorrectionCandidate[] {
-
-    // Step 1. string을 공백 단위로 쪼개서 list로 만드는 함수
-    const splitSearchTerms = (value: string | null | undefined) => {
-      if (!value) { return [] }
-
-      return value
-        .split(/[\s,./()[\]{}\-_:;!?'"`~|]+/g)
-        .map((term) => term.trim())
-        .filter((term) => term.length >= 2)
-    }
-    
-    // Step 2. string을 index로 하는 Map과 
-    // 그 Map을 위한 helper 함수
-    const candidates = new Map<string, CorrectionCandidate>()
-    const register = (term: string) => {
-      const normalizedTerm = this.normalizeSearchTerm(term)
-      const decomposedTerm = this.decomposeToJamo(normalizedTerm)
-      if (!normalizedTerm || !decomposedTerm) {
-        return
-      }
-
-      if (!candidates.has(normalizedTerm)) {
-        candidates.set(normalizedTerm, {
-          term: term.trim(),
-          normalizedTerm,
-          decomposedTerm,
-        })
-      }
-    }
-
-    // Step 3. queryLength에 맞춰 string[]을 따라가며
-    // map에 등록하는 함수
-    const registerExpandedTerms = (value: string | null | undefined) => {
-      for (const term of splitSearchTerms(value)) {
-        register(term)
-
-        if (term.length <= queryLength + 1) {
-          continue
-        }
-
-        for (const windowLength of [queryLength, queryLength + 1]) {
-          if (windowLength < 2 || windowLength > term.length) {
-            continue
-          }
-
-          for (let start = 0; start + windowLength <= term.length; start += 1) {
-            register(term.slice(start, start + windowLength))
-          }
-        }
-      }
-    }
-
-    // Step 4. name, fullname, tag를 잘 쪼개서
-    // map에 등록한다. 
-    for (const club of clubs) {
-      register(club.name)
-      registerExpandedTerms(club.name)
-      registerExpandedTerms(club.fullName)
-      for (const tag of club.tags ?? []) {
-        registerExpandedTerms(tag)
-      }
-    }
-
-    // Step 5. map을 array로 변환
-    return Array.from(candidates.values())
-  }
-
   async getCategories(): Promise<ClubCategory[]> {
     this.userActivityLogRepository
       .insert({
@@ -412,7 +157,7 @@ export class ClubService {
     return CATEGORIES
   }
 
-  private async getClubReviews(uuids: ClubUuid[]): Promise<
+  async getClubReviews(uuids: ClubUuid[]): Promise<
     Map<
       ClubUuid,
       {
@@ -555,37 +300,6 @@ export class ClubService {
     { clubId, clubName }: { clubId?: string; clubName?: string },
   ) {
     await this.clubManagerRegisterRequestRepository.insert({ serviceUserId, clubId, clubName })
-  }
-
-  async findCandidatesByName(clubName: string | undefined, total = 5): Promise<Club[]> {
-    const clubs = await this.clubRepository.find()
-    let out = clubs.filter(
-      (it) => it.name.includes(clubName ?? '') || it.fullName.includes(clubName ?? ''),
-    )
-    if (out.length < total) {
-      const candidiates = this.similarByEditDistance(
-        clubs.filter((it) => !out.includes(it)),
-        clubName,
-        total,
-      )
-      out = [...out, ...candidiates]
-    }
-    return out.slice(0, total).map((it) => toClubDomain(it))
-  }
-
-  private similarByEditDistance(
-    clubEntities: ClubEntity[],
-    clubName: string | undefined,
-    total: number,
-  ): ClubEntity[] {
-    return clubEntities
-      .map((it) => ({
-        entity: it,
-        distance: leven(it.name, clubName ?? ''),
-      }))
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, total)
-      .map((it) => it.entity)
   }
 
   async registerClubManager(serviceUserId: string, clubUuid: string) {

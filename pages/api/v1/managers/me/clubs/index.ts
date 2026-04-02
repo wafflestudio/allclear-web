@@ -2,6 +2,7 @@ import { Club } from 'server/domain/model/Club'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { Provider } from 'server/provider'
 import { ClubService } from 'server/service/club.service'
+import { SearchService } from 'server/service/search.service'
 import { UserNotFoundError } from 'server/domain/error'
 import { UserService } from 'server/service/user.service'
 import { z } from 'zod'
@@ -27,6 +28,7 @@ export default async function handler(
 ) {
   try {
     const clubService = Provider.getService(ClubService)
+    const searchService = Provider.getService(SearchService)
     const userService = Provider.getService(UserService)
     const slackService = Provider.getService(SlackService)
 
@@ -48,7 +50,7 @@ export default async function handler(
       if (clubId) {
         clubs = [await clubService.findByUuid(clubId)]
       } else {
-        clubs = await clubService.findCandidatesByName(clubName)
+        clubs = await searchService.findCandidatesByName(clubName)
       }
       const clubDetails = clubs.map((club) => `- ${club.name} (ID: \`${club.id}\`)`).join('\n')
       await slackService.sendMessage(
