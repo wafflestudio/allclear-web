@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import jwt from 'jsonwebtoken'
+import { z } from 'zod'
+import type { ZodIssue } from 'zod'
 import { Provider } from 'server/provider'
 import { AuthService } from 'server/service/auth.service'
 import { ENV } from 'server/ENV'
@@ -11,7 +13,7 @@ type ResponseData = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData | string>,
+  res: NextApiResponse<ResponseData | string | ZodIssue[]>,
 ) {
   try {
     const authService = Provider.getService(AuthService)
@@ -38,6 +40,9 @@ export default async function handler(
     }
     return res.status(405).send('method not allowed')
   } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json(err.errors)
+    }
     console.error('kakaoLoginNativeCallback error: ', err)
     return res.status(500).send('Internal Server Error')
   }
