@@ -19,10 +19,7 @@ import {
   PUBLIC_CLUB_STATUS,
   REJECTED_CLUB_STATUS,
 } from 'src/common/constants/club-status'
-import type {
-  ClubCreationDecision,
-  CreateClubCreationRequest,
-} from 'src/lib/schemas/managers'
+import type { ClubCreationDecision, CreateClubCreationRequest } from 'src/lib/schemas/managers'
 
 type ClubUuid = string
 type ReviewKeywordId = string
@@ -121,6 +118,7 @@ export class ClubService {
     const clubIds = Array.from(new Set(clubReviews.map((it) => it.clubId)))
     const club = await this.clubRepository.findBy({
       uuid: In(clubIds),
+      status: PUBLIC_CLUB_STATUS,
       deletedAt: IsNull(),
     })
     return club.map((it) => toClubDomain(it))
@@ -131,6 +129,7 @@ export class ClubService {
     const clubIds = Array.from(new Set(savedClubs.map((it) => it.clubId)))
     const club = await this.clubRepository.findBy({
       uuid: In(clubIds),
+      status: PUBLIC_CLUB_STATUS,
       deletedAt: IsNull(),
     })
     return club.map((it) => toClubDomain(it))
@@ -220,10 +219,7 @@ export class ClubService {
     return toClubDomain(createdClub)
   }
 
-  async decideClubCreationRequest(
-    clubUuid: string,
-    decision: ClubCreationDecision,
-  ): Promise<Club> {
+  async decideClubCreationRequest(clubUuid: string, decision: ClubCreationDecision): Promise<Club> {
     await this.getClubEntityByUuid(clubUuid)
 
     await this.clubRepository.update(
