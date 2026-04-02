@@ -83,6 +83,7 @@ export class SearchService {
   async findCandidatesByName(clubName: string | undefined, total = 5): Promise<Club[]> {
     const clubs = await this.clubRepository.find({
       where: {
+        status: PUBLIC_CLUB_STATUS,
         deletedAt: IsNull(),
       },
     })
