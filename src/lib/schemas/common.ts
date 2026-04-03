@@ -1,4 +1,5 @@
 import { z } from 'src/lib/schemas/zod'
+import { CLUB_STATUSES } from 'src/common/constants/club-status'
 
 export const ValidationIssueSchema = z
   .object({
@@ -65,6 +66,8 @@ export const ClubCategorySchema = z
   .passthrough()
   .openapi('ClubCategory')
 
+export const ClubStatusSchema = z.enum(CLUB_STATUSES).openapi('ClubStatus')
+
 export const UserSchema = z
   .object({
     id: z.string(),
@@ -107,7 +110,7 @@ export const ClubSchema = z
     blurHash: z.string().nullable(),
     article: z.string(),
     articleUploadedAt: z.string().nullable(),
-    status: z.string(),
+    status: ClubStatusSchema,
     rejectReason: z.string(),
     avgRating: z.number(),
     totalReviews: z.number().int(),

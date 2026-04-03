@@ -1,3 +1,5 @@
+import type { ClubStatus } from 'src/common/constants/club-status'
+
 export type ClubCollegeMajor = {
   id: number
   college: string
@@ -26,6 +28,6 @@ export type Club = {
   imageUri: string
   article: string
   articleUploadedAt: string | null
-  status: string
+  status: ClubStatus
   rejectReason: string
 }

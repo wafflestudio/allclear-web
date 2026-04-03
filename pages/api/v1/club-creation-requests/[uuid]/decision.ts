@@ -1,10 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next'
+import { ZodIssue, z } from 'zod'
 import { Provider } from 'server/provider'
 import { ClubService } from 'server/service/club.service'
-import { Club } from 'server/domain/model/Club'
-import { z, ZodIssue } from 'zod'
-import { ClubUuidParamsSchema } from 'src/lib/schemas/clubs'
 import { NotFoundError } from 'server/domain/error'
+import { Club } from 'server/domain/model/Club'
+import { ClubUuidParamsSchema } from 'src/lib/schemas/clubs'
+import { ClubCreationDecisionSchema } from 'src/lib/schemas/managers'
 
 export default async function handler(
   req: NextApiRequest,
@@ -12,9 +13,11 @@ export default async function handler(
 ) {
   try {
     const clubService = Provider.getService(ClubService)
-    if (req.method == 'GET') {
-      const { uuid: ClubUuid } = ClubUuidParamsSchema.parse(req.query)
-      const club = await clubService.findPublicByUuid(ClubUuid)
+
+    if (req.method === 'PATCH') {
+      const { uuid: clubUuid } = ClubUuidParamsSchema.parse(req.query)
+      const body = ClubCreationDecisionSchema.parse(req.body)
+      const club = await clubService.decideClubCreationRequest(clubUuid, body)
       return res.status(200).json(club)
     }
   } catch (err) {
@@ -24,7 +27,9 @@ export default async function handler(
     if (err instanceof z.ZodError) {
       return res.status(400).json(err.errors)
     }
-    console.error('getClubDetail error: ', err)
+    console.error('decideClubCreationRequest error: ', err)
     return res.status(500).send('Internal Server Error')
   }
+
+  return res.status(405).end()
 }

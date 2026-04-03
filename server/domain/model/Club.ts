@@ -1,6 +1,7 @@
 import { ClubEntity } from '../../infra/database/entities'
 import { ENV } from '../../ENV'
 import { CollegeMajor } from './CollegeMajor'
+import type { ClubStatus } from 'src/common/constants/club-status'
 
 export type ReviewKeyword = {
   id: string
@@ -34,7 +35,7 @@ export type Club = {
   blurHash: string | null
   article: string
   articleUploadedAt: string | null
-  status: string
+  status: ClubStatus
   rejectReason: string
   avgRating: number
   totalReviews: number
