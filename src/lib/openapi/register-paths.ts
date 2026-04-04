@@ -424,6 +424,29 @@ registry.registerPath({
 
 registry.registerPath({
   method: 'get',
+  path: '/api/v1/clubs/{uuid}/recruitments/representative',
+  tags: ['Clubs'],
+  summary: '동아리 대표 모집공고 조회',
+  request: {
+    params: ClubRecruitmentParamsSchema,
+  },
+  responses: {
+    200: {
+      description: '조회 성공',
+      content: {
+        'application/json': {
+          schema: ClubRecruitmentSchema.nullable(),
+        },
+      },
+    },
+    400: validationErrorResponse,
+    404: notFoundResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'get',
   path: '/api/v1/clubs/{uuid}/recruitments/{recruitmentId}',
   tags: ['Clubs'],
   summary: '동아리 모집공고 상세 조회',

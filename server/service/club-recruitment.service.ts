@@ -33,6 +33,24 @@ export class ClubRecruitmentService {
     return recruitments.map((it) => toClubRecruitmentDomain(it))
   }
 
+  async findPublicRepresentativeRecruitmentByClub(
+    clubUuid: string,
+  ): Promise<ClubRecruitment | null> {
+    await this.assertPublicClubExists(clubUuid)
+    const recruitment = await this.clubRecruitmentRepository.findOne({
+      where: {
+        clubId: clubUuid,
+        deletedAt: IsNull(),
+      },
+      order: {
+        yearMonth: 'DESC',
+        createdAt: 'DESC',
+      },
+    })
+
+    return recruitment ? toClubRecruitmentDomain(recruitment) : null
+  }
+
   async findPublicRecruitmentById(
     clubUuid: string,
     recruitmentId: string,
