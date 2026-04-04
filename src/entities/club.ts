@@ -12,6 +12,7 @@ export type Club = {
   name: string
   fullName: string
   description: string
+  shortDescription: string
   introduction: string
   type: string
   category: string
@@ -22,8 +23,12 @@ export type Club = {
   recruitType: string
   isPopular: boolean
   hasDongbang: boolean
+  dongbangLocation: string
   activityCycle: string
+  minActivityPeriod: number
+  activeMemberCount: number
   membershipFee: string
+  sns: string
   tags: string[]
   imageUri: string
   article: string

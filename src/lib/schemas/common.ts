@@ -1,5 +1,6 @@
 import { z } from 'src/lib/schemas/zod'
 import { CLUB_STATUSES } from 'src/common/constants/club-status'
+import { CLUB_RECRUIT_TYPES } from 'src/common/constants/club-recruit-type'
 
 export const ValidationIssueSchema = z
   .object({
@@ -93,6 +94,7 @@ export const ClubSchema = z
     name: z.string(),
     fullName: z.string(),
     description: z.string(),
+    shortDescription: z.string(),
     introduction: z.string(),
     type: z.string(),
     category: z.string(),
@@ -100,11 +102,15 @@ export const ClubSchema = z
     affiliationType: z.string(),
     collegeMajorId: z.number().nullable(),
     collegeMajor: CollegeMajorSchema.nullable(),
-    recruitType: z.string(),
+    recruitType: z.enum(CLUB_RECRUIT_TYPES),
     isPopular: z.boolean(),
     hasDongbang: z.boolean(),
+    dongbangLocation: z.string(),
     activityCycle: z.string(),
+    minActivityPeriod: z.number().int(),
+    activeMemberCount: z.number().int(),
     membershipFee: z.string(),
+    sns: z.string(),
     tags: z.array(z.string()),
     imageUri: z.string(),
     blurHash: z.string().nullable(),

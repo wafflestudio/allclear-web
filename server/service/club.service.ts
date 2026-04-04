@@ -19,6 +19,7 @@ import {
   PUBLIC_CLUB_STATUS,
   REJECTED_CLUB_STATUS,
 } from 'src/common/constants/club-status'
+import { normalizeClubRecruitType } from 'src/common/constants/club-recruit-type'
 import type { ClubCreationDecision, CreateClubCreationRequest } from 'src/lib/schemas/managers'
 
 type ClubUuid = string
@@ -192,6 +193,7 @@ export class ClubService {
         name: club.name,
         fullName: club.fullName,
         description: club.fullName,
+        shortDescription: club.shortDescription?.trim() ?? '',
         type: club.type,
         category: club.category,
         college: club.college,
@@ -200,7 +202,11 @@ export class ClubService {
         tags: club.tags,
         article: club.detail ?? '',
         articleUploadedAt: (club.detail ?? '').trim() ? now : null,
-        recruitType: club.recruitType ?? null,
+        recruitType: normalizeClubRecruitType(club.recruitType),
+        dongbangLocation: club.dongbangLocation?.trim() ?? '',
+        minActivityPeriod: club.minActivityPeriod ?? 0,
+        activeMemberCount: club.activeMemberCount ?? 0,
+        sns: club.sns?.trim() ?? '',
         introduction: club.introduction ?? '',
         authkey: uuidv4(),
         status: PENDING_CLUB_STATUS,
