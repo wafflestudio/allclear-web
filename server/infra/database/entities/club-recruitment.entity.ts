@@ -1,5 +1,14 @@
-import { BeforeInsert, BeforeUpdate, Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm'
-import { TimeStampMixin } from './TimeStampMixin'
+import {
+  BeforeInsert,
+  BeforeUpdate,
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm'
 import { formatYearMonth } from 'src/common/utils/formatYearMonth'
 
 @Entity('club_recruitment')
@@ -9,7 +18,7 @@ import { formatYearMonth } from 'src/common/utils/formatYearMonth'
   unique: true,
   where: '"deleted_at" IS NULL',
 })
-export class ClubRecruitmentEntity extends TimeStampMixin {
+export class ClubRecruitmentEntity {
   @PrimaryGeneratedColumn('increment', { type: 'bigint', name: 'id' })
   id: string
 
@@ -70,10 +79,35 @@ export class ClubRecruitmentEntity extends TimeStampMixin {
   @Column({ type: 'varchar', name: 'year_month' })
   yearMonth: string
 
+  @CreateDateColumn({
+    type: 'timestamp with time zone',
+    default: () => 'NOW()',
+    name: 'created_at',
+  })
+  createdAt: string
+
+  @UpdateDateColumn({
+    type: 'timestamp with time zone',
+    default: () => 'NOW()',
+    onUpdate: 'NOW()',
+    name: 'updated_at',
+  })
+  updatedAt: string
+
+  @DeleteDateColumn({
+    type: 'timestamp with time zone',
+    nullable: true,
+    select: false,
+    name: 'deleted_at',
+  })
+  deletedAt: string | null
+
   // year_month는 created_at 기준 파생 컬럼이라 저장 직전에 함께 맞춘다.
   @BeforeInsert()
   @BeforeUpdate()
   syncYearMonth() {
-    this.yearMonth = formatYearMonth(this.createdAt ?? new Date())
+    const createdAt = this.createdAt ?? new Date().toISOString()
+    this.createdAt = createdAt
+    this.yearMonth = formatYearMonth(createdAt)
   }
 }
