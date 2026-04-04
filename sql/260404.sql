@@ -75,3 +75,23 @@ CREATE TABLE public.club_recruitment (
 );
 CREATE INDEX idx_recruitment_club_id ON public.club_recruitment(club_id);
 CREATE INDEX idx_recruitment_deadline ON public.club_recruitment(deadline);
+
+
+-- club_recruitment 테이블의 year_month 관련
+-- 1. 일단 NULL 허용으로 컬럼 추가
+ALTER TABLE public.club_recruitment 
+ADD COLUMN year_month character varying;
+
+-- 2. 기존 데이터의 created_at을 기준으로 year_month 채우기
+UPDATE public.club_recruitment 
+SET year_month = to_char(created_at, 'YYYY-MM')
+WHERE year_month IS NULL;
+
+-- 3. 이제 NOT NULL 제약 조건 걸기
+ALTER TABLE public.club_recruitment 
+ALTER COLUMN year_month SET NOT NULL;
+
+-- 4. 유니크 인덱스 생성
+CREATE UNIQUE INDEX idx_unique_club_month_active 
+ON public.club_recruitment (club_id, year_month) 
+WHERE deleted_at IS NULL;
