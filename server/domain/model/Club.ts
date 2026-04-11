@@ -2,6 +2,7 @@ import { ClubEntity } from '../../infra/database/entities'
 import { ENV } from '../../ENV'
 import { CollegeMajor } from './CollegeMajor'
 import type { ClubStatus } from 'src/common/constants/club-status'
+import { normalizeClubRecruitType } from 'src/common/constants/club-recruit-type'
 
 export type ReviewKeyword = {
   id: string
@@ -18,6 +19,7 @@ export type Club = {
   name: string
   fullName: string
   description: string
+  shortDescription: string
   introduction: string
   type: string
   category: string
@@ -28,8 +30,12 @@ export type Club = {
   recruitType: string
   isPopular: boolean
   hasDongbang: boolean
+  dongbangLocation: string
   activityCycle: string
+  minActivityPeriod: number
+  activeMemberCount: number
   membershipFee: string
+  sns: string
   tags: string[]
   imageUri: string
   blurHash: string | null
@@ -57,6 +63,7 @@ export const toClubDomain = (
   name: it.name,
   fullName: it.fullName,
   description: it.description,
+  shortDescription: it.shortDescription ?? '',
   introduction: it.introduction ?? '',
   type: it.type,
   category: it.category,
@@ -70,11 +77,15 @@ export const toClubDomain = (
         major: it.collegeMajor.major,
       }
     : null,
-  recruitType: it.recruitType ?? '',
+  recruitType: normalizeClubRecruitType(it.recruitType),
   isPopular: it.isPopular,
   hasDongbang: it.hasDongbang,
+  dongbangLocation: it.dongbangLocation ?? '',
   activityCycle: it.activityCycle ?? '',
+  minActivityPeriod: it.minActivityPeriod ?? 0,
+  activeMemberCount: it.activeMemberCount ?? 0,
   membershipFee: it.membershipFee ?? '',
+  sns: it.sns ?? '',
   tags: it.tags,
   imageUri: encode(it.imageUri) || ENV.R2.DEFAULT_CLUB_IMAGE,
   blurHash: it.blurHash,

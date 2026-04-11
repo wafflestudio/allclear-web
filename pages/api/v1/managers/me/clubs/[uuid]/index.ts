@@ -3,9 +3,67 @@ import { z } from 'zod'
 import { Provider } from 'server/provider'
 import { ClubService } from 'server/service/club.service'
 import { UserService } from 'server/service/user.service'
+import type { ClubEntity } from 'server/infra/database/entities/club.entity'
 import { UserNotFoundError } from 'server/domain/error'
 import { ClubUuidParamsSchema } from 'src/lib/schemas/clubs'
 import { ManagedClubUpdateSchema } from 'src/lib/schemas/managers'
+import { normalizeClubRecruitType } from 'src/common/constants/club-recruit-type'
+
+type ManagedClubUpdate = z.infer<typeof ManagedClubUpdateSchema>
+
+function assignIfDefined<TKey extends keyof ClubEntity>(
+  patch: Partial<ClubEntity>,
+  key: TKey,
+  value: ClubEntity[TKey] | undefined,
+) {
+  if (value !== undefined) {
+    patch[key] = value
+  }
+}
+
+function normalizeManagedClubPatch(
+  body: ManagedClubUpdate,
+  currentArticle: string,
+): Partial<ClubEntity> {
+  const patch: Partial<ClubEntity> = {
+    name: body.name,
+    fullName: body.fullName,
+    description: body.fullName,
+    type: body.type,
+    category: body.category,
+    tags: body.tags,
+    college: body.college,
+    affiliationType: body.affiliationType,
+    collegeMajorId: body.collegeMajorId ?? null,
+    introduction: body.introduction ?? '',
+  }
+
+  assignIfDefined(
+    patch,
+    'shortDescription',
+    body.shortDescription === undefined ? undefined : body.shortDescription?.trim() ?? '',
+  )
+  assignIfDefined(
+    patch,
+    'recruitType',
+    body.recruitType === undefined ? undefined : normalizeClubRecruitType(body.recruitType),
+  )
+  assignIfDefined(
+    patch,
+    'dongbangLocation',
+    body.dongbangLocation === undefined ? undefined : body.dongbangLocation?.trim() ?? '',
+  )
+  assignIfDefined(patch, 'minActivityPeriod', body.minActivityPeriod)
+  assignIfDefined(patch, 'activeMemberCount', body.activeMemberCount)
+  assignIfDefined(patch, 'sns', body.sns === undefined ? undefined : body.sns?.trim() ?? '')
+
+  if ((body.detail ?? '') !== currentArticle) {
+    patch.article = body.detail ?? ''
+    patch.articleUploadedAt = new Date().toISOString()
+  }
+
+  return patch
+}
 
 const api: NextApiHandler = async (req, res) => {
   try {
@@ -23,23 +81,7 @@ const api: NextApiHandler = async (req, res) => {
       const club = await clubService.getManagedClubByUuid(clubUuid, user.serviceUserId)
 
       const body = ManagedClubUpdateSchema.parse(req.body)
-
-      await clubService.updateClub(club.uuid, {
-        name: body.name,
-        fullName: body.fullName,
-        description: body.fullName,
-        type: body.type,
-        recruitType: body.recruitType,
-        category: body.category,
-        tags: body.tags,
-        college: body.college,
-        affiliationType: body.affiliationType,
-        collegeMajorId: body.collegeMajorId ?? null,
-        introduction: body.introduction ?? '',
-        ...((body.detail ?? '') !== club.article
-          ? { article: body.detail ?? '', articleUploadedAt: new Date().toISOString() }
-          : {}),
-      })
+      await clubService.updateClub(club.uuid, normalizeManagedClubPatch(body, club.article))
       return res.status(200).end()
     }
   } catch (err) {
