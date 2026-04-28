@@ -1,3 +1,5 @@
+export { CLUB_RECRUIT_TYPES } from 'src/common/constants/club-recruit-type'
+
 export const CLUB_COLLEGES = [
   '단과대무관',
   '중앙동아리',
@@ -31,7 +33,5 @@ export const CLUB_CATEGORIES = [
   '운동',
   '봉사',
 ] as const
-
-export const CLUB_RECRUIT_TYPES = ['정기', '상시', '매 학기', '매 년'] as const
 
 export const CLUB_AFFILIATION_TYPES = ['기타', '연합동아리', '중앙동아리', '소속동아리'] as const

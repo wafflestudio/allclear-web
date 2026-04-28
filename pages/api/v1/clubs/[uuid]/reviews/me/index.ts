@@ -3,7 +3,7 @@ import { Provider } from 'server/provider'
 import { ReviewService } from 'server/service/review.service'
 import { UserService } from 'server/service/user.service'
 import { z, ZodIssue } from 'zod'
-import { UserNotFoundError } from 'server/domain/error'
+import { NotFoundError, UserNotFoundError } from 'server/domain/error'
 import { ClubUuidParamsSchema, type MyReview } from 'src/lib/schemas/clubs'
 
 type ResponseData = MyReview | null
@@ -26,6 +26,9 @@ export default async function handler(
       return res.status(200).send(myReview)
     }
   } catch (err) {
+    if (err instanceof NotFoundError) {
+      return res.status(404).send('club not found')
+    }
     if (err instanceof UserNotFoundError) {
       return res.status(404).send('user not found')
     }

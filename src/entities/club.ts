@@ -1,3 +1,5 @@
+import type { ClubStatus } from 'src/common/constants/club-status'
+
 export type ClubCollegeMajor = {
   id: number
   college: string
@@ -10,6 +12,7 @@ export type Club = {
   name: string
   fullName: string
   description: string
+  shortDescription: string
   introduction: string
   type: string
   category: string
@@ -20,10 +23,16 @@ export type Club = {
   recruitType: string
   isPopular: boolean
   hasDongbang: boolean
+  dongbangLocation: string
   activityCycle: string
+  minActivityPeriod: number
+  activeMemberCount: number
   membershipFee: string
+  sns: string
   tags: string[]
   imageUri: string
   article: string
   articleUploadedAt: string | null
+  status: ClubStatus
+  rejectReason: string
 }

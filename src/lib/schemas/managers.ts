@@ -4,8 +4,28 @@ import {
   CLUB_COLLEGES,
   CLUB_RECRUIT_TYPES,
 } from 'src/fixtures/club-options'
+import { CLUB_DECISION_STATUSES, REJECTED_CLUB_STATUS } from 'src/common/constants/club-status'
 import { z } from 'src/lib/schemas/zod'
 import { ClubSchema } from 'src/lib/schemas/common'
+
+const ClubRecruitTypeInputSchema = z
+  .union([z.enum([...CLUB_RECRUIT_TYPES, '매 학기', '매 년'] as const), z.literal('')])
+  .nullable()
+  .optional()
+
+const NonnegativeIntInputSchema = z
+  .preprocess((value) => {
+    if (value === undefined) {
+      return undefined
+    }
+
+    if (value === '' || value === null) {
+      return 0
+    }
+
+    return Number(value)
+  }, z.number().int().nonnegative())
+  .optional()
 
 export const ManagerClubParamsSchema = z
   .object({
@@ -21,29 +41,58 @@ export const ClubManagerRegisterRequestSchema = z
   })
   .openapi('ClubManagerRegisterRequest')
 
-export const ManagedClubUpdateSchema = z
+const clubDraftShape = {
+  name: z.string().nonempty().max(30),
+  fullName: z.string().nonempty().max(50),
+  type: z.enum(['교내', '연합']),
+  recruitType: ClubRecruitTypeInputSchema,
+  category: z.enum(CLUB_CATEGORIES),
+  tags: z
+    .array(
+      z
+        .string()
+        .nonempty()
+        .max(10)
+        .regex(/^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9_\-.]+$/),
+    )
+    .max(5),
+  college: z.enum(CLUB_COLLEGES),
+  affiliationType: z.enum(CLUB_AFFILIATION_TYPES),
+  collegeMajorId: z.number().int().nullable().optional(),
+  shortDescription: z.string().nullable().optional(),
+  dongbangLocation: z.string().nullable().optional(),
+  minActivityPeriod: NonnegativeIntInputSchema,
+  activeMemberCount: NonnegativeIntInputSchema,
+  sns: z.string().nullable().optional(),
+  introduction: z.string().max(1000).nullable().optional(),
+  detail: z.string().max(5000).nullable().optional(),
+}
+
+export const CreateClubCreationRequestSchema = z
+  .object(clubDraftShape)
+  .openapi('CreateClubCreationRequest')
+
+export type CreateClubCreationRequest = z.infer<typeof CreateClubCreationRequestSchema>
+
+export const ManagedClubUpdateSchema = z.object(clubDraftShape).openapi('ManagedClubUpdate')
+
+export const ClubCreationDecisionSchema = z
   .object({
-    name: z.string().nonempty().max(30),
-    fullName: z.string().nonempty().max(50),
-    type: z.enum(['교내', '연합']),
-    recruitType: z.enum(CLUB_RECRUIT_TYPES).nullable().optional(),
-    category: z.enum(CLUB_CATEGORIES),
-    tags: z
-      .array(
-        z
-          .string()
-          .nonempty()
-          .max(10)
-          .regex(/^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9_\-.]+$/),
-      )
-      .max(5),
-    college: z.enum(CLUB_COLLEGES),
-    affiliationType: z.enum(CLUB_AFFILIATION_TYPES),
-    collegeMajorId: z.number().int().nullable().optional(),
-    introduction: z.string().max(1000).nullable().optional(),
-    detail: z.string().max(5000).nullable().optional(),
+    status: z.enum(CLUB_DECISION_STATUSES),
+    rejectReason: z.string().trim().max(300).optional(),
   })
-  .openapi('ManagedClubUpdate')
+  .superRefine(({ status, rejectReason }, ctx) => {
+    if (status === REJECTED_CLUB_STATUS && !rejectReason?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['rejectReason'],
+        message: 'rejectReason is required when status is REJECTED',
+      })
+    }
+  })
+  .openapi('ClubCreationDecision')
+
+export type ClubCreationDecision = z.infer<typeof ClubCreationDecisionSchema>
 
 export const ManagedClubsResponseSchema = z
   .object({

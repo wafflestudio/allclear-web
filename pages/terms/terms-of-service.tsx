@@ -140,7 +140,7 @@ const termsOfService: {
 올클와 이용자 간에 발생한 서비스 이용에 관한 분쟁에 대하여는 대한민국 법을 적용하며, 본 분쟁으로 인한 소는 민사소송법상의 관할을 가지는 대한민국의 법원에 제기한다.
 
 제19조(기타)
-1. 이 약관은 2023년 8월 22일에 최신화 완료되었다.
+1. 이 약관은 2026년 4월 3일에 최신화 완료되었다.
 2. 이 약관에서 정하지 아니한 사항과 이 약관의 해석에 관하여는 관련법 또는 관례에 따른다.
 3. 이 약관에도 불구하고 다른 약관 및 서비스 이용에 문제가 있을시 해당 내용을 우선으로 한다.`
   .split('\n--\n')
@@ -207,9 +207,9 @@ const TermsOfService: NextPage = () => {
         <div className="p-4 py-6 mx-auto max-w-screen-xl md:p-8 lg:p-10">
           <div className="text-center">
             <span className="block text-sm text-center text-gray-500">
-              © 2024{' '}
+              © 2026{' '}
               <a href="#" className="hover:underline">
-                주식회사 신선한여울
+                WaffleStudio
               </a>
               . All Rights Reserved.
             </span>
