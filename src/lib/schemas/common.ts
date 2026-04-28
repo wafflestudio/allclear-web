@@ -69,6 +69,25 @@ export const ClubCategorySchema = z
 
 export const ClubStatusSchema = z.enum(CLUB_STATUSES).openapi('ClubStatus')
 
+export const AnnouncementSchema = z
+  .object({
+    uuid: z.string().uuid(),
+    title: z.string(),
+    content: z.string(),
+  })
+  .openapi('Announcement')
+
+export const TermsSchema = z
+  .object({
+    uuid: z.string().uuid(),
+    termsKey: z.string(),
+    title: z.string(),
+    contentUrl: z.string(),
+    version: z.string(),
+    isMandatory: z.boolean(),
+  })
+  .openapi('Terms')
+
 export const UserSchema = z
   .object({
     id: z.string(),
