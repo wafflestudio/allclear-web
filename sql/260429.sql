@@ -6,6 +6,9 @@
 - regular_meeting 테이블 생성
 - college_major 테이블의 major를 정확한 값으로 수정
 - college_major 테이블에 행 추가
+
+- old_club_manager 테이블 생성 및 데이터 백업
+- club_manager 테이블 데이터 삭제
 */
 ALTER TABLE club
 ADD COLUMN is_official_verified BOOLEAN NOT NULL DEFAULT false,
@@ -123,9 +126,13 @@ INSERT INTO public.college_major (college, major) VALUES
 (NULL, '연계전공 학습과학'),
 (NULL, '연계전공 영화영상학');
 
+-- old_club_manager 테이블 생성 및 데이터 백업
 CREATE TABLE old_club_manager
 (LIKE club_manager INCLUDING ALL);
 
 INSERT INTO old_club_manager
 SELECT *
 FROM club_manager;
+
+-- club_manager 테이블 데이터 삭제
+TRUNCATE TABLE club_manager;
