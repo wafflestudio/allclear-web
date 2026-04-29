@@ -41,6 +41,7 @@ import {
   ClubCreationDecisionSchema,
   ClubRegisterRequestSchema,
   ClubManagerRegisterRequestSchema,
+  ManagedClubPatchSchema,
   ManagedClubsResponseSchema,
   ManagedClubUpdateSchema,
   ManagerClubParamsSchema,
@@ -88,6 +89,15 @@ const notFoundResponse = {
 
 const unauthorizedResponse = {
   description: '인증이 필요합니다.',
+  content: {
+    'text/plain': {
+      schema: ErrorMessageSchema,
+    },
+  },
+}
+
+const forbiddenResponse = {
+  description: '권한이 없습니다.',
   content: {
     'text/plain': {
       schema: ErrorMessageSchema,
@@ -931,7 +941,7 @@ registry.registerPath({
 })
 
 registry.registerPath({
-  method: 'put',
+  method: 'patch',
   path: '/api/v1/managers/me/clubs/{uuid}',
   tags: ['Managers'],
   summary: '관리 중인 동아리 수정',
@@ -941,7 +951,7 @@ registry.registerPath({
     body: {
       content: {
         'application/json': {
-          schema: ManagedClubUpdateSchema,
+          schema: ManagedClubPatchSchema,
         },
       },
     },
@@ -949,8 +959,22 @@ registry.registerPath({
   responses: {
     200: {
       description: '수정 성공',
+      content: {
+        'application/json': {
+          schema: z.object({
+            success: z.literal(true),
+            message: z.string(),
+            data: z.object({
+              club_uuid: z.string().uuid(),
+              updated_at: z.string(),
+            }),
+          }),
+        },
+      },
     },
     400: validationErrorResponse,
+    401: unauthorizedResponse,
+    403: forbiddenResponse,
     404: notFoundResponse,
     500: internalServerErrorResponse,
   },

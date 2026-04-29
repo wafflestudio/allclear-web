@@ -1,6 +1,11 @@
 import { In, IsNull, Repository } from 'typeorm'
 import { InjectRepository, Service } from '../provider'
-import { ClubEntity, UserActivityLogEntity, UserActivityLogType } from '../infra/database/entities'
+import {
+  ClubEntity,
+  ClubHistoryEntity,
+  UserActivityLogEntity,
+  UserActivityLogType,
+} from '../infra/database/entities'
 import { ClubCategory } from '../domain/model/ClubCategory'
 import { CATEGORIES } from '../../src/fixtures/category'
 import { Club, ReviewKeyword, toClubDomain } from 'server/domain/model/Club'
@@ -11,7 +16,7 @@ import { ClubManagerEntity } from '../infra/database/entities/club-manager.entit
 import { UserSavedClubEntity } from '../infra/database/entities/user-saved-club.entity'
 import { ClubManagerRegisterRequestEntity } from '../infra/database/entities/club-manager-register-request.entity'
 import dayjs from 'dayjs'
-import { NotFoundError } from '../domain/error'
+import { BadRequestError, ForbiddenError, NotFoundError } from '../domain/error'
 import { sortByPopularAndEachRandom } from '../util/club-sort'
 import {
   PENDING_CLUB_STATUS,
@@ -19,8 +24,11 @@ import {
   REJECTED_CLUB_STATUS,
 } from 'src/common/constants/club-status'
 import { normalizeClubRecruitType } from 'src/common/constants/club-recruit-type'
-import type { ClubCreationDecision, ClubRegisterRequest } from 'src/lib/schemas/managers'
-import { BadRequestError } from '../domain/error'
+import type {
+  ClubCreationDecision,
+  ClubRegisterRequest,
+  ManagedClubPatch,
+} from 'src/lib/schemas/managers'
 import { CollegeMajorEntity } from '../infra/database/entities/college-major.entity'
 
 type ClubUuid = string
@@ -44,6 +52,8 @@ export class ClubService {
   private readonly clubManagerRegisterRequestRepository: Repository<ClubManagerRegisterRequestEntity>
   @InjectRepository(CollegeMajorEntity)
   private readonly collegeMajorRepository: Repository<CollegeMajorEntity>
+  @InjectRepository(ClubHistoryEntity)
+  private readonly clubHistoryRepository: Repository<ClubHistoryEntity>
 
   async findByUuid(uuid: string): Promise<Club> {
     this.userActivityLogRepository
@@ -431,6 +441,186 @@ export class ClubService {
       club,
     )
     return !!updated.affected && updated.affected > 0
+  }
+
+  async patchManagedClub(
+    clubUuid: string,
+    serviceUserId: string,
+    body: ManagedClubPatch,
+  ): Promise<{ clubUuid: string; updatedAt: string }> {
+    const patch = await this.normalizeManagedClubPatch(body)
+    if (Object.keys(patch).length === 0) {
+      throw new BadRequestError('수정할 필드가 없습니다.')
+    }
+
+    return this.clubRepository.manager.transaction(async (manager) => {
+      const clubRepository = manager.getRepository(ClubEntity)
+      const clubManagerRepository = manager.getRepository(ClubManagerEntity)
+      const clubHistoryRepository = manager.getRepository(ClubHistoryEntity)
+
+      const club = await clubRepository.findOneBy({
+        uuid: clubUuid,
+        deletedAt: IsNull(),
+      })
+      if (!club) {
+        throw new NotFoundError('club not found')
+      }
+
+      const clubManager = await clubManagerRepository.findOneBy({
+        clubId: clubUuid,
+        serviceUserId,
+      })
+      if (!clubManager) {
+        throw new ForbiddenError('club manager permission required')
+      }
+
+      const beforeData = this.toClubHistoryData(club)
+      await clubRepository.update(
+        {
+          uuid: clubUuid,
+          deletedAt: IsNull(),
+        },
+        patch,
+      )
+
+      const updatedClub = await clubRepository.findOneByOrFail({
+        uuid: clubUuid,
+        deletedAt: IsNull(),
+      })
+      const afterData = this.toClubHistoryData(updatedClub)
+      const changedFields = this.getChangedClubFields(beforeData, afterData, Object.keys(patch))
+
+      await clubHistoryRepository.insert({
+        clubId: clubUuid,
+        serviceUserId,
+        beforeData: beforeData as any,
+        afterData: afterData as any,
+        changedFields,
+      })
+
+      return {
+        clubUuid,
+        updatedAt: updatedClub.updatedAt,
+      }
+    })
+  }
+
+  private async normalizeManagedClubPatch(body: ManagedClubPatch): Promise<Partial<ClubEntity>> {
+    const patch: Partial<ClubEntity> = {}
+
+    if (body.name !== undefined) {
+      patch.name = body.name
+    }
+    if (body.type !== undefined) {
+      if (body.type === '교외') {
+        throw new BadRequestError('현재 교외 동아리는 등록 신청이 불가능합니다.')
+      }
+      patch.type = body.type
+    }
+    if (body.image_uri !== undefined) {
+      patch.imageUri = body.image_uri
+    }
+    if (body.category !== undefined) {
+      patch.category = body.category
+    }
+    if (body.affiliation !== undefined) {
+      const affiliation = await this.resolveClubAffiliation(body.affiliation)
+      patch.affiliationType = affiliation.affiliationType
+      patch.collegeMajorId = affiliation.collegeMajorId
+    }
+    if (body.short_description !== undefined) {
+      patch.shortDescription = body.short_description
+    }
+    if (body.recruit_type !== undefined) {
+      patch.recruitType = normalizeClubRecruitType(body.recruit_type)
+    }
+    if (body.min_activity_period !== undefined) {
+      patch.minActivityPeriod = body.min_activity_period
+    }
+    if (body.has_dongbang !== undefined) {
+      patch.hasDongbang = body.has_dongbang
+    }
+    if (body.dongbang_location !== undefined) {
+      patch.dongbangLocation = body.dongbang_location
+    }
+    if (body.sns !== undefined) {
+      patch.sns = body.sns
+    }
+    if (body.introduction !== undefined) {
+      patch.introduction = body.introduction
+    }
+
+    return patch
+  }
+
+  private getChangedClubFields(
+    beforeData: Record<string, unknown>,
+    afterData: Record<string, unknown>,
+    patchKeys: string[],
+  ): string[] {
+    return patchKeys
+      .map((key) => this.clubEntityFieldToColumnName(key))
+      .filter((key) => beforeData[key] !== afterData[key])
+  }
+
+  private clubEntityFieldToColumnName(field: string): string {
+    const columnNames: Record<string, string> = {
+      name: 'name',
+      type: 'type',
+      imageUri: 'image_uri',
+      category: 'category',
+      shortDescription: 'short_description',
+      recruitType: 'recruit_type',
+      minActivityPeriod: 'min_activity_period',
+      hasDongbang: 'has_dongbang',
+      dongbangLocation: 'dongbang_location',
+      affiliationType: 'affiliation_type',
+      collegeMajorId: 'college_major_id',
+      sns: 'sns',
+      introduction: 'introduction',
+    }
+
+    return columnNames[field] ?? field
+  }
+
+  private toClubHistoryData(club: ClubEntity): Record<string, unknown> {
+    return {
+      uuid: club.uuid,
+      name: club.name,
+      full_name: club.fullName,
+      description: club.description,
+      short_description: club.shortDescription,
+      type: club.type,
+      category: club.category,
+      college: club.college,
+      affiliation_type: club.affiliationType,
+      college_major_id: club.collegeMajorId,
+      image_uri: club.imageUri,
+      thumbnail_uri: club.thumbnailUri,
+      tags: club.tags,
+      article: club.article,
+      article_uploaded_at: club.articleUploadedAt,
+      is_popular: club.isPopular,
+      has_dongbang: club.hasDongbang,
+      dongbang_location: club.dongbangLocation,
+      activity_cycle: club.activityCycle,
+      min_activity_period: club.minActivityPeriod,
+      active_member_count: club.activeMemberCount,
+      membership_fee: club.membershipFee,
+      recruit_type: club.recruitType,
+      is_official_verified: club.isOfficialVerified,
+      verified_at: club.verifiedAt,
+      sns: club.sns,
+      introduction: club.introduction,
+      blur_image: club.blurImage,
+      blur_hash: club.blurHash,
+      created_at: club.createdAt,
+      updated_at: club.updatedAt,
+      deleted_at: club.deletedAt,
+      approved_at: club.approvedAt,
+      status: club.status,
+      reject_reason: club.rejectReason,
+    }
   }
 
   async clubManagerRegisterRequest(

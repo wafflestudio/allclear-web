@@ -98,6 +98,28 @@ export type ClubRegisterRequest = z.infer<typeof ClubRegisterRequestSchema>
 
 export const ManagedClubUpdateSchema = z.object(clubDraftShape).openapi('ManagedClubUpdate')
 
+export const ManagedClubPatchSchema = z
+  .object({
+    name: z.string().trim().nonempty().max(30).optional(),
+    type: z.enum(['교내', '교외']).optional(),
+    image_uri: z.string().trim().url().optional(),
+    category: z.enum(CLUB_CATEGORIES).optional(),
+    affiliation: z.string().trim().nonempty().optional(),
+    short_description: z.string().trim().nonempty().optional(),
+    recruit_type: z.enum(CLUB_RECRUIT_TYPES).optional(),
+    min_activity_period: z.number().int().nonnegative().optional(),
+    has_dongbang: z.boolean().optional(),
+    dongbang_location: z.string().trim().optional(),
+    sns: z.string().trim().url().optional(),
+    introduction: z.string().trim().nonempty().optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'At least one field is required',
+  })
+  .openapi('ManagedClubPatch')
+
+export type ManagedClubPatch = z.infer<typeof ManagedClubPatchSchema>
+
 export const ClubCreationDecisionSchema = z
   .object({
     status: z.enum(CLUB_DECISION_STATUSES),
