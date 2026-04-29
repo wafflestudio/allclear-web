@@ -10,7 +10,7 @@ export class RegularMeetingEntity {
   clubRecruitmentId: string
 
   @ManyToOne(() => ClubRecruitmentEntity, (clubRecruitment) => clubRecruitment.regularMeetings, {
-    onDelete: 'CASCADE',
+    createForeignKeyConstraints: false,
   })
   @JoinColumn({ name: 'club_recruitment_id' })
   clubRecruitment: ClubRecruitmentEntity
