@@ -43,6 +43,16 @@ export const ClubManagerRegisterRequestSchema = z
   })
   .openapi('ClubManagerRegisterRequest')
 
+export const ClubManagerRequestSchema = z
+  .object({
+    name: z.string().trim().nonempty(),
+    phone: z.string().trim().nonempty(),
+    student_id: z.string().trim().nonempty(),
+  })
+  .openapi('ClubManagerRequest')
+
+export type ClubManagerRequest = z.infer<typeof ClubManagerRequestSchema>
+
 const clubDraftShape = {
   name: z.string().nonempty().max(30),
   fullName: z.string().nonempty().max(50),

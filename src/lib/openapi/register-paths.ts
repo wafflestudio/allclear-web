@@ -40,6 +40,7 @@ import {
   ClubImageUploadSchema,
   ClubCreationDecisionSchema,
   ClubRegisterRequestSchema,
+  ClubManagerRequestSchema,
   ClubManagerRegisterRequestSchema,
   ManagedClubPatchSchema,
   ManagedClubsResponseSchema,
@@ -480,6 +481,42 @@ registry.registerPath({
     },
     400: validationErrorResponse,
     401: unauthorizedResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/clubs/{uuid}/manager-requests',
+  tags: ['Clubs'],
+  summary: '동아리 관리 권한 신청',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: ClubUuidParamsSchema,
+    body: {
+      content: {
+        'application/json': {
+          schema: ClubManagerRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: '동아리 관리 권한 신청 성공',
+      content: {
+        'application/json': {
+          schema: z.object({
+            success: z.literal(true),
+            message: z.string(),
+          }),
+        },
+      },
+    },
+    400: validationErrorResponse,
+    401: unauthorizedResponse,
+    404: notFoundResponse,
+    409: conflictResponse,
     500: internalServerErrorResponse,
   },
 })

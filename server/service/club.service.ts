@@ -16,7 +16,7 @@ import { ClubManagerEntity } from '../infra/database/entities/club-manager.entit
 import { UserSavedClubEntity } from '../infra/database/entities/user-saved-club.entity'
 import { ClubManagerRegisterRequestEntity } from '../infra/database/entities/club-manager-register-request.entity'
 import dayjs from 'dayjs'
-import { BadRequestError, ForbiddenError, NotFoundError } from '../domain/error'
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../domain/error'
 import { sortByPopularAndEachRandom } from '../util/club-sort'
 import {
   PENDING_CLUB_STATUS,
@@ -27,6 +27,7 @@ import { normalizeClubRecruitType } from 'src/common/constants/club-recruit-type
 import type {
   ClubCreationDecision,
   ClubData,
+  ClubManagerRequest,
   ClubRegisterRequest,
   ManagedClubPatch,
 } from 'src/lib/schemas/managers'
@@ -611,6 +612,38 @@ export class ClubService {
       name,
       phone,
       studentId,
+    })
+  }
+
+  async createClubManagerRequest(
+    clubUuid: string,
+    serviceUserId: string,
+    request: ClubManagerRequest,
+  ): Promise<void> {
+    await this.getClubEntityByUuid(clubUuid)
+
+    const existingManager = await this.clubManagerRepository.findOneBy({
+      clubId: clubUuid,
+    })
+    if (existingManager) {
+      throw new ConflictError('club already has a manager')
+    }
+
+    const pendingRequest = await this.clubManagerRegisterRequestRepository.findOneBy({
+      clubId: clubUuid,
+      serviceUserId,
+      status: 'PENDING',
+    })
+    if (pendingRequest) {
+      throw new ConflictError('pending manager request already exists')
+    }
+
+    await this.clubManagerRegisterRequestRepository.insert({
+      serviceUserId,
+      clubId: clubUuid,
+      name: request.name,
+      phone: request.phone,
+      studentId: request.student_id,
     })
   }
 
