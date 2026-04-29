@@ -122,3 +122,10 @@ INSERT INTO public.college_major (college, major) VALUES
 (NULL, '연계전공 과학기술학'),
 (NULL, '연계전공 학습과학'),
 (NULL, '연계전공 영화영상학');
+
+CREATE TABLE old_club_manger
+(LIKE club_manager INCLUDING ALL);
+
+INSERT INTO old_club_manger
+SELECT *
+FROM club_manager;
