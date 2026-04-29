@@ -26,6 +26,7 @@ import {
 import { normalizeClubRecruitType } from 'src/common/constants/club-recruit-type'
 import type {
   ClubCreationDecision,
+  ClubData,
   ClubRegisterRequest,
   ManagedClubPatch,
 } from 'src/lib/schemas/managers'
@@ -33,6 +34,22 @@ import { CollegeMajorEntity } from '../infra/database/entities/college-major.ent
 
 type ClubUuid = string
 type ReviewKeywordId = string
+
+const CLUB_ENTITY_FIELD_TO_COLUMN: Record<string, string> = {
+  name: 'name',
+  type: 'type',
+  imageUri: 'image_uri',
+  category: 'category',
+  shortDescription: 'short_description',
+  recruitType: 'recruit_type',
+  minActivityPeriod: 'min_activity_period',
+  hasDongbang: 'has_dongbang',
+  dongbangLocation: 'dongbang_location',
+  affiliationType: 'affiliation_type',
+  collegeMajorId: 'college_major_id',
+  sns: 'sns',
+  introduction: 'introduction',
+}
 
 @Service
 export class ClubService {
@@ -195,31 +212,14 @@ export class ClubService {
 
   async registerClub(serviceUserId: string, body: ClubRegisterRequest): Promise<void> {
     const { club_data: club, manager_data: managerData } = body
-
-    if (club.type === '교외') {
-      throw new BadRequestError('현재 교외 동아리는 등록 신청이 불가능합니다.')
-    }
-
-    const affiliation = await this.resolveClubAffiliation(club.affiliation)
+    const clubPatch = await this.buildClubPatchFromClubData(club)
 
     await this.clubRepository.manager.transaction(async (manager) => {
       const clubRepository = manager.getRepository(ClubEntity)
       const clubManagerRepository = manager.getRepository(ClubManagerEntity)
 
       const entity = clubRepository.create({
-        name: club.name,
-        shortDescription: club.short_description,
-        type: club.type,
-        category: club.category,
-        affiliationType: affiliation.affiliationType,
-        collegeMajorId: affiliation.collegeMajorId,
-        imageUri: club.image_uri,
-        recruitType: normalizeClubRecruitType(club.recruit_type),
-        hasDongbang: club.has_dongbang,
-        dongbangLocation: club.dongbang_location?.trim() ?? '',
-        minActivityPeriod: club.min_activity_period,
-        sns: club.sns,
-        introduction: club.introduction,
+        ...clubPatch,
         status: PENDING_CLUB_STATUS,
         approvedAt: null,
         rejectReason: '',
@@ -448,7 +448,7 @@ export class ClubService {
     serviceUserId: string,
     body: ManagedClubPatch,
   ): Promise<{ clubUuid: string; updatedAt: string }> {
-    const patch = await this.normalizeManagedClubPatch(body)
+    const patch = await this.buildClubPatchFromClubData(body)
     if (Object.keys(patch).length === 0) {
       throw new BadRequestError('수정할 필드가 없습니다.')
     }
@@ -488,7 +488,9 @@ export class ClubService {
         deletedAt: IsNull(),
       })
       const afterData = this.toClubHistoryData(updatedClub)
-      const changedFields = this.getChangedClubFields(beforeData, afterData, Object.keys(patch))
+      const changedFields = Object.keys(patch)
+        .map((key) => CLUB_ENTITY_FIELD_TO_COLUMN[key] ?? key)
+        .filter((key) => beforeData[key] !== afterData[key])
 
       await clubHistoryRepository.insert({
         clubId: clubUuid,
@@ -505,7 +507,7 @@ export class ClubService {
     })
   }
 
-  private async normalizeManagedClubPatch(body: ManagedClubPatch): Promise<Partial<ClubEntity>> {
+  private async buildClubPatchFromClubData(body: Partial<ClubData>): Promise<Partial<ClubEntity>> {
     const patch: Partial<ClubEntity> = {}
 
     if (body.name !== undefined) {
@@ -551,36 +553,6 @@ export class ClubService {
     }
 
     return patch
-  }
-
-  private getChangedClubFields(
-    beforeData: Record<string, unknown>,
-    afterData: Record<string, unknown>,
-    patchKeys: string[],
-  ): string[] {
-    return patchKeys
-      .map((key) => this.clubEntityFieldToColumnName(key))
-      .filter((key) => beforeData[key] !== afterData[key])
-  }
-
-  private clubEntityFieldToColumnName(field: string): string {
-    const columnNames: Record<string, string> = {
-      name: 'name',
-      type: 'type',
-      imageUri: 'image_uri',
-      category: 'category',
-      shortDescription: 'short_description',
-      recruitType: 'recruit_type',
-      minActivityPeriod: 'min_activity_period',
-      hasDongbang: 'has_dongbang',
-      dongbangLocation: 'dongbang_location',
-      affiliationType: 'affiliation_type',
-      collegeMajorId: 'college_major_id',
-      sns: 'sns',
-      introduction: 'introduction',
-    }
-
-    return columnNames[field] ?? field
   }
 
   private toClubHistoryData(club: ClubEntity): Record<string, unknown> {

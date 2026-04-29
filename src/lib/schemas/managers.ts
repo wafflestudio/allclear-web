@@ -70,22 +70,26 @@ const clubDraftShape = {
   detail: z.string().max(5000).nullable().optional(),
 }
 
+const ClubDataSchema = z.object({
+  name: z.string().trim().nonempty().max(30),
+  type: z.enum(['교내', '교외']),
+  image_uri: z.string().trim().url(),
+  category: z.enum(CLUB_CATEGORIES),
+  affiliation: z.string().trim().nonempty(),
+  short_description: z.string().trim().nonempty(),
+  recruit_type: z.enum(CLUB_RECRUIT_TYPES),
+  min_activity_period: z.number().int().nonnegative(),
+  has_dongbang: z.boolean(),
+  dongbang_location: z.string().trim().optional(),
+  sns: z.string().trim().url(),
+  introduction: z.string().trim().nonempty(),
+})
+
+export type ClubData = z.infer<typeof ClubDataSchema>
+
 export const ClubRegisterRequestSchema = z
   .object({
-    club_data: z.object({
-      name: z.string().trim().nonempty().max(30),
-      type: z.enum(['교내', '교외']),
-      image_uri: z.string().trim().url(),
-      category: z.enum(CLUB_CATEGORIES),
-      affiliation: z.string().trim().nonempty(),
-      short_description: z.string().trim().nonempty(),
-      recruit_type: z.enum(CLUB_RECRUIT_TYPES),
-      min_activity_period: z.number().int().nonnegative(),
-      has_dongbang: z.boolean(),
-      dongbang_location: z.string().trim().optional(),
-      sns: z.string().trim().url(),
-      introduction: z.string().trim().nonempty(),
-    }),
+    club_data: ClubDataSchema,
     manager_data: z.object({
       name: z.string().trim().nonempty(),
       phone: z.string().trim().nonempty(),
@@ -98,21 +102,7 @@ export type ClubRegisterRequest = z.infer<typeof ClubRegisterRequestSchema>
 
 export const ManagedClubUpdateSchema = z.object(clubDraftShape).openapi('ManagedClubUpdate')
 
-export const ManagedClubPatchSchema = z
-  .object({
-    name: z.string().trim().nonempty().max(30).optional(),
-    type: z.enum(['교내', '교외']).optional(),
-    image_uri: z.string().trim().url().optional(),
-    category: z.enum(CLUB_CATEGORIES).optional(),
-    affiliation: z.string().trim().nonempty().optional(),
-    short_description: z.string().trim().nonempty().optional(),
-    recruit_type: z.enum(CLUB_RECRUIT_TYPES).optional(),
-    min_activity_period: z.number().int().nonnegative().optional(),
-    has_dongbang: z.boolean().optional(),
-    dongbang_location: z.string().trim().optional(),
-    sns: z.string().trim().url().optional(),
-    introduction: z.string().trim().nonempty().optional(),
-  })
+export const ManagedClubPatchSchema = ClubDataSchema.partial()
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field is required',
   })
