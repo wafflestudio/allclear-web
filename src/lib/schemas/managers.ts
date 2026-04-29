@@ -70,12 +70,6 @@ const clubDraftShape = {
   detail: z.string().max(5000).nullable().optional(),
 }
 
-export const CreateClubCreationRequestSchema = z
-  .object(clubDraftShape)
-  .openapi('CreateClubCreationRequest')
-
-export type CreateClubCreationRequest = z.infer<typeof CreateClubCreationRequestSchema>
-
 export const ClubRegisterRequestSchema = z
   .object({
     club_data: z.object({

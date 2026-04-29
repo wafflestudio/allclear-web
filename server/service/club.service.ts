@@ -13,18 +13,13 @@ import { ClubManagerRegisterRequestEntity } from '../infra/database/entities/clu
 import dayjs from 'dayjs'
 import { NotFoundError } from '../domain/error'
 import { sortByPopularAndEachRandom } from '../util/club-sort'
-import { v4 as uuidv4 } from 'uuid'
 import {
   PENDING_CLUB_STATUS,
   PUBLIC_CLUB_STATUS,
   REJECTED_CLUB_STATUS,
 } from 'src/common/constants/club-status'
 import { normalizeClubRecruitType } from 'src/common/constants/club-recruit-type'
-import type {
-  ClubCreationDecision,
-  ClubRegisterRequest,
-  CreateClubCreationRequest,
-} from 'src/lib/schemas/managers'
+import type { ClubCreationDecision, ClubRegisterRequest } from 'src/lib/schemas/managers'
 import { BadRequestError } from '../domain/error'
 import { CollegeMajorEntity } from '../infra/database/entities/college-major.entity'
 
@@ -186,51 +181,6 @@ export class ClubService {
     })
     const clubReview = await this.getClubReviews(entities.map((it) => it.uuid))
     return entities.map((it) => toClubDomain(it, clubReview.get(it.uuid)))
-  }
-
-  async createClubCreationRequest(
-    serviceUserId: string,
-    club: CreateClubCreationRequest,
-  ): Promise<Club> {
-    const now = new Date().toISOString()
-    const createdClub = await this.clubRepository.manager.transaction(async (manager) => {
-      const clubRepository = manager.getRepository(ClubEntity)
-      const clubManagerRepository = manager.getRepository(ClubManagerEntity)
-
-      const entity = clubRepository.create({
-        name: club.name,
-        fullName: club.fullName,
-        description: club.fullName,
-        shortDescription: club.shortDescription?.trim() ?? '',
-        type: club.type,
-        category: club.category,
-        college: club.college,
-        affiliationType: club.affiliationType,
-        collegeMajorId: club.collegeMajorId ?? null,
-        tags: club.tags,
-        article: club.detail ?? '',
-        articleUploadedAt: (club.detail ?? '').trim() ? now : null,
-        recruitType: normalizeClubRecruitType(club.recruitType),
-        dongbangLocation: club.dongbangLocation?.trim() ?? '',
-        minActivityPeriod: club.minActivityPeriod ?? 0,
-        activeMemberCount: club.activeMemberCount ?? 0,
-        sns: club.sns?.trim() ?? '',
-        introduction: club.introduction ?? '',
-        authkey: uuidv4(),
-        status: PENDING_CLUB_STATUS,
-        approvedAt: null,
-        rejectReason: '',
-      })
-
-      const created = await clubRepository.save(entity)
-      await clubManagerRepository.insert({
-        clubId: created.uuid,
-        serviceUserId,
-      })
-      return created
-    })
-
-    return toClubDomain(createdClub)
   }
 
   async registerClub(serviceUserId: string, body: ClubRegisterRequest): Promise<void> {
