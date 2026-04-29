@@ -602,6 +602,8 @@ const useUpdateClub = () => {
 }
 
 const formatCollegeMajorLabel = (collegeMajor: ClubCollegeMajor) =>
-  collegeMajor.major ? `${collegeMajor.college} / ${collegeMajor.major}` : collegeMajor.college
+  collegeMajor.major
+    ? [collegeMajor.college, collegeMajor.major].filter(Boolean).join(' / ')
+    : collegeMajor.college ?? ''
 
 export default ClubEditPage

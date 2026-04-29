@@ -81,6 +81,12 @@ export class ClubEntity {
   @Column({ type: 'varchar', default: '', nullable: true, name: 'recruit_type' })
   recruitType: string | null
 
+  @Column({ type: 'boolean', default: false, name: 'is_official_verified' })
+  isOfficialVerified: boolean
+
+  @Column({ type: 'timestamp without time zone', nullable: true, name: 'verified_at' })
+  verifiedAt: string | null
+
   @Column({ type: 'varchar', default: '', name: 'sns' })
   sns: string
 

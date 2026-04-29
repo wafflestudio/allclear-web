@@ -32,7 +32,7 @@ export const TokenResponseSchema = z
 export const CollegeMajorSchema = z
   .object({
     id: z.number().int(),
-    college: z.string(),
+    college: z.string().nullable(),
     major: z.string().nullable(),
   })
   .openapi('CollegeMajor')
@@ -122,6 +122,8 @@ export const ClubSchema = z
     collegeMajorId: z.number().nullable(),
     collegeMajor: CollegeMajorSchema.nullable(),
     recruitType: z.enum(CLUB_RECRUIT_TYPES),
+    isOfficialVerified: z.boolean(),
+    verifiedAt: z.string().nullable(),
     isPopular: z.boolean(),
     hasDongbang: z.boolean(),
     dongbangLocation: z.string(),

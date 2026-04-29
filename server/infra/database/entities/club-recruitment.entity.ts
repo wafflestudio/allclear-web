@@ -6,10 +6,12 @@ import {
   DeleteDateColumn,
   Entity,
   Index,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm'
 import { formatYearMonth } from 'src/common/utils/formatYearMonth'
+import { RegularMeetingEntity } from './regular-meeting.entity'
 
 @Entity('club_recruitment')
 @Index('idx_recruitment_club_id', ['clubId'])
@@ -25,32 +27,22 @@ export class ClubRecruitmentEntity {
   @Column({ type: 'uuid', name: 'club_id' })
   clubId: string
 
-  @Column({ type: 'varchar', default: '', name: 'description' })
-  description: string
-
-  @Column({ type: 'varchar', default: '미정', name: 'recruit_type' })
-  recruitType: string
-
-  @Column({ type: 'int', name: 'recruit_year' })
-  recruitYear: number
-
-  @Column({ type: 'varchar', name: 'recruit_term' })
-  recruitTerm: string
+  @Column({ type: 'varchar', default: '', name: 'title' })
+  title: string
 
   @Column({ type: 'timestamp with time zone', name: 'deadline' })
   deadline: string
 
-  @Column({ type: 'int', nullable: true, name: 'recruit_count' })
-  recruitCount: number | null
+  @Column({ type: 'boolean', default: false, name: 'is_mandatory' })
+  isMandatory: boolean
 
-  @Column({ type: 'varchar', default: '', name: 'recruit_count_text' })
-  recruitCountText: string
+  @Column({ type: 'boolean', default: false, name: 'has_regular_meeting' })
+  hasRegularMeeting: boolean
 
-  @Column({ type: 'boolean', default: false, name: 'is_college_limited' })
-  isCollegeLimited: boolean
-
-  @Column({ type: 'varchar', default: '', name: 'eligibility_text' })
-  eligibilityText: string
+  @OneToMany(() => RegularMeetingEntity, (regularMeeting) => regularMeeting.clubRecruitment, {
+    eager: true,
+  })
+  regularMeetings: RegularMeetingEntity[]
 
   @Column({ type: 'varchar', default: '', name: 'application_url' })
   applicationUrl: string
@@ -58,23 +50,35 @@ export class ClubRecruitmentEntity {
   @Column({ type: 'varchar', default: '', name: 'application_process' })
   applicationProcess: string
 
-  @Column({ type: 'boolean', default: false, name: 'has_membership_fee' })
-  hasMembershipFee: boolean
-
-  @Column({ type: 'varchar', nullable: true, name: 'membership_fee_text' })
-  membershipFeeText: string | null
-
   @Column({ type: 'varchar', default: '미정', name: 'activity_location_type' })
   activityLocationType: string
 
   @Column({ type: 'varchar', default: '', name: 'activity_location_text' })
   activityLocationText: string
 
-  @Column({ type: 'varchar', default: '', name: 'main_activities' })
-  mainActivities: string
+  @Column({ type: 'boolean', default: false, name: 'has_eligibility' })
+  hasEligibility: boolean
 
-  @Column({ type: 'varchar', nullable: true, name: 'extra_info' })
-  extraInfo: string | null
+  @Column({ type: 'varchar', default: '', name: 'eligibility_text' })
+  eligibilityText: string
+
+  @Column({ type: 'boolean', default: false, name: 'has_capacity_limit' })
+  hasCapacityLimit: boolean
+
+  @Column({ type: 'varchar', default: '', name: 'capacity_limit_text' })
+  capacityLimitText: string
+
+  @Column({ type: 'boolean', default: false, name: 'has_membership_fee' })
+  hasMembershipFee: boolean
+
+  @Column({ type: 'varchar', default: '', name: 'membership_fee_text' })
+  membershipFeeText: string
+
+  @Column({ type: 'varchar', nullable: true, name: 'full_recruitment_text' })
+  fullRecruitmentText: string | null
+
+  @Column({ type: 'jsonb', default: () => "'[]'::jsonb", name: 'image_urls' })
+  imageUrls: string[]
 
   @Column({ type: 'varchar', name: 'year_month' })
   yearMonth: string
