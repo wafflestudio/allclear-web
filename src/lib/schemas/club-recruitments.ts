@@ -1,7 +1,6 @@
-import { CLUB_RECRUIT_TYPES } from 'src/common/constants/club-recruit-type'
 import {
   CLUB_RECRUITMENT_ACTIVITY_LOCATION_TYPES,
-  CLUB_RECRUITMENT_TERMS,
+  REGULAR_MEETING_DAYS,
 } from 'src/common/constants/club-recruitment'
 import { z } from 'src/lib/schemas/zod'
 
@@ -10,23 +9,6 @@ const TimestampStringSchema = z
   .refine((value) => !Number.isNaN(new Date(value).getTime()), {
     message: 'Invalid datetime string',
   })
-
-const IntInputSchema = z.preprocess((value) => {
-  if (typeof value === 'string' && value.trim() !== '') {
-    return Number(value)
-  }
-  return value
-}, z.number().int())
-
-const NullableNonnegativeIntInputSchema = z.preprocess((value) => {
-  if (value === '' || value === null || value === undefined) {
-    return null
-  }
-  if (typeof value === 'string') {
-    return Number(value)
-  }
-  return value
-}, z.number().int().nonnegative().nullable())
 
 const BooleanInputSchema = z.preprocess((value) => {
   if (value === 'true') {
@@ -38,16 +20,26 @@ const BooleanInputSchema = z.preprocess((value) => {
   return value
 }, z.boolean())
 
-const NullableTrimmedStringSchema = z.preprocess((value) => {
+const TrimmedStringSchema = z.preprocess((value) => {
   if (value === null || value === undefined) {
-    return null
+    return ''
   }
-  if (typeof value === 'string') {
-    const trimmed = value.trim()
-    return trimmed.length > 0 ? trimmed : null
-  }
-  return value
-}, z.string().nullable())
+  return typeof value === 'string' ? value.trim() : value
+}, z.string())
+
+const NullableTrimmedStringSchema = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+  z.string().trim().nullable(),
+)
+
+export const RegularMeetingSchema = z
+  .object({
+    id: z.string().regex(/^\d+$/).optional(),
+    dayOfWeek: z.enum(REGULAR_MEETING_DAYS),
+    startTime: z.string().nullable(),
+    endTime: z.string().nullable(),
+  })
+  .openapi('RegularMeeting')
 
 export const ClubRecruitmentParamsSchema = z
   .object({
@@ -64,23 +56,26 @@ export const ClubRecruitmentIdParamsSchema = z
 
 export const UpsertClubRecruitmentSchema = z
   .object({
-    description: z.string().trim(),
-    recruitType: z.enum(CLUB_RECRUIT_TYPES),
-    recruitYear: IntInputSchema,
-    recruitTerm: z.enum(CLUB_RECRUITMENT_TERMS),
+    title: TrimmedStringSchema,
     deadline: TimestampStringSchema,
-    recruitCount: NullableNonnegativeIntInputSchema,
-    recruitCountText: z.string().trim(),
-    isCollegeLimited: BooleanInputSchema,
-    eligibilityText: z.string().trim(),
-    applicationUrl: z.string().trim(),
-    applicationProcess: z.string().trim(),
-    hasMembershipFee: BooleanInputSchema,
-    membershipFeeText: NullableTrimmedStringSchema,
+    isMandatory: BooleanInputSchema,
+    hasRegularMeeting: BooleanInputSchema,
+    regularMeetings: z
+      .array(RegularMeetingSchema.omit({ id: true }))
+      .optional()
+      .default([]),
     activityLocationType: z.enum(CLUB_RECRUITMENT_ACTIVITY_LOCATION_TYPES),
-    activityLocationText: z.string().trim(),
-    mainActivities: z.string().trim(),
-    extraInfo: NullableTrimmedStringSchema,
+    activityLocationText: TrimmedStringSchema,
+    hasEligibility: BooleanInputSchema,
+    eligibilityText: TrimmedStringSchema,
+    hasCapacityLimit: BooleanInputSchema,
+    capacityLimitText: TrimmedStringSchema,
+    hasMembershipFee: BooleanInputSchema,
+    membershipFeeText: TrimmedStringSchema,
+    applicationUrl: TrimmedStringSchema,
+    applicationProcess: TrimmedStringSchema,
+    fullRecruitmentText: NullableTrimmedStringSchema,
+    imageUrls: z.array(z.string()).optional().default([]),
   })
   .openapi('UpsertClubRecruitment')
 
@@ -90,23 +85,23 @@ export const ClubRecruitmentSchema = z
   .object({
     id: z.string().regex(/^\d+$/),
     clubId: z.string().uuid(),
-    description: z.string(),
-    recruitType: z.enum(CLUB_RECRUIT_TYPES),
-    recruitYear: z.number().int(),
-    recruitTerm: z.enum(CLUB_RECRUITMENT_TERMS),
+    title: z.string(),
     deadline: z.string(),
-    recruitCount: z.number().int().nullable(),
-    recruitCountText: z.string(),
-    isCollegeLimited: z.boolean(),
-    eligibilityText: z.string(),
-    applicationUrl: z.string(),
-    applicationProcess: z.string(),
-    hasMembershipFee: z.boolean(),
-    membershipFeeText: z.string().nullable(),
+    isMandatory: z.boolean(),
+    hasRegularMeeting: z.boolean(),
+    regularMeetings: z.array(RegularMeetingSchema.required({ id: true })),
     activityLocationType: z.enum(CLUB_RECRUITMENT_ACTIVITY_LOCATION_TYPES),
     activityLocationText: z.string(),
-    mainActivities: z.string(),
-    extraInfo: z.string().nullable(),
+    hasEligibility: z.boolean(),
+    eligibilityText: z.string(),
+    hasCapacityLimit: z.boolean(),
+    capacityLimitText: z.string(),
+    hasMembershipFee: z.boolean(),
+    membershipFeeText: z.string(),
+    applicationUrl: z.string(),
+    applicationProcess: z.string(),
+    fullRecruitmentText: z.string().nullable(),
+    imageUrls: z.array(z.string()),
     yearMonth: z.string().regex(/^\d{4}-\d{2}$/),
     createdAt: z.string(),
     updatedAt: z.string(),

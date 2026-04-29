@@ -2,7 +2,6 @@ import { Club } from 'server/domain/model/Club'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { Provider } from 'server/provider'
 import { ClubService } from 'server/service/club.service'
-import { SearchService } from 'server/service/search.service'
 import { UserNotFoundError } from 'server/domain/error'
 import { UserService } from 'server/service/user.service'
 import { SlackService } from '../../../../../../server/service/slack.service'
@@ -23,7 +22,6 @@ export default async function handler(
 ) {
   try {
     const clubService = Provider.getService(ClubService)
-    const searchService = Provider.getService(SearchService)
     const userService = Provider.getService(UserService)
     const slackService = Provider.getService(SlackService)
 
@@ -36,29 +34,27 @@ export default async function handler(
       })
     }
     if (req.method === 'POST') {
-      const { clubId, clubName } = ClubManagerRegisterRequestSchema.parse(req.body)
+      const { clubId, name, phone, studentId } = ClubManagerRegisterRequestSchema.parse(req.body)
+      const requestName = name || user.name || user.nickname
+      const requestPhone = phone || user.phone
+      const requestStudentId = studentId || String(user.admissionClass ?? '')
       await clubService.clubManagerRegisterRequest(user.serviceUserId, {
         clubId,
-        clubName,
+        name: requestName,
+        phone: requestPhone,
+        studentId: requestStudentId,
       })
-      let clubs: Club[] = []
-      if (clubId) {
-        clubs = [await clubService.findByUuid(clubId)]
-      } else {
-        clubs = await searchService.findCandidatesByName(clubName)
-      }
+      const clubs: Club[] = [await clubService.findByUuid(clubId)]
       const clubDetails = clubs.map((club) => `- ${club.name} (ID: \`${club.id}\`)`).join('\n')
       await slackService.sendMessage(
         'DRAGONITE',
         'C0AEQRLAGMU',
         `*행운의 망나뇽이 동아리 관리자 등록 요청을 들고왔어요*
 유저: ${user.name || user.nickname} (Service User ID: ${user.serviceUserId})
-연락처: ${user.phone}
-동아리명: ${clubName}${
-          clubs.length
-            ? `\n\n망나뇽이 올클 DB에 있는 유사한 이름의 동아리를 물어왔어요\n${clubDetails}`
-            : ''
-        }`,
+신청자명: ${requestName}
+연락처: ${requestPhone}
+학번: ${requestStudentId}
+동아리:\n${clubDetails}`,
       )
       return res.status(204).send(null)
     }

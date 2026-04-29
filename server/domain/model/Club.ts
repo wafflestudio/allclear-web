@@ -28,6 +28,8 @@ export type Club = {
   collegeMajorId: number | null
   collegeMajor: CollegeMajor | null
   recruitType: string
+  isOfficialVerified: boolean
+  verifiedAt: string | null
   isPopular: boolean
   hasDongbang: boolean
   dongbangLocation: string
@@ -78,6 +80,8 @@ export const toClubDomain = (
       }
     : null,
   recruitType: normalizeClubRecruitType(it.recruitType),
+  isOfficialVerified: it.isOfficialVerified,
+  verifiedAt: it.verifiedAt,
   isPopular: it.isPopular,
   hasDongbang: it.hasDongbang,
   dongbangLocation: it.dongbangLocation ?? '',
