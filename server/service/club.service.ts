@@ -20,7 +20,13 @@ import {
   REJECTED_CLUB_STATUS,
 } from 'src/common/constants/club-status'
 import { normalizeClubRecruitType } from 'src/common/constants/club-recruit-type'
-import type { ClubCreationDecision, CreateClubCreationRequest } from 'src/lib/schemas/managers'
+import type {
+  ClubCreationDecision,
+  ClubRegisterRequest,
+  CreateClubCreationRequest,
+} from 'src/lib/schemas/managers'
+import { BadRequestError } from '../domain/error'
+import { CollegeMajorEntity } from '../infra/database/entities/college-major.entity'
 
 type ClubUuid = string
 type ReviewKeywordId = string
@@ -41,6 +47,8 @@ export class ClubService {
   private readonly clubManagerRepository: Repository<ClubManagerEntity>
   @InjectRepository(ClubManagerRegisterRequestEntity)
   private readonly clubManagerRegisterRequestRepository: Repository<ClubManagerRegisterRequestEntity>
+  @InjectRepository(CollegeMajorEntity)
+  private readonly collegeMajorRepository: Repository<CollegeMajorEntity>
 
   async findByUuid(uuid: string): Promise<Club> {
     this.userActivityLogRepository
@@ -223,6 +231,87 @@ export class ClubService {
     })
 
     return toClubDomain(createdClub)
+  }
+
+  async registerClub(serviceUserId: string, body: ClubRegisterRequest): Promise<void> {
+    const { club_data: club, manager_data: managerData } = body
+
+    if (club.type === '교외') {
+      throw new BadRequestError('현재 교외 동아리는 등록 신청이 불가능합니다.')
+    }
+
+    const affiliation = await this.resolveClubAffiliation(club.affiliation)
+
+    await this.clubRepository.manager.transaction(async (manager) => {
+      const clubRepository = manager.getRepository(ClubEntity)
+      const clubManagerRepository = manager.getRepository(ClubManagerEntity)
+
+      const entity = clubRepository.create({
+        name: club.name,
+        shortDescription: club.short_description,
+        type: club.type,
+        category: club.category,
+        affiliationType: affiliation.affiliationType,
+        collegeMajorId: affiliation.collegeMajorId,
+        imageUri: club.image_uri,
+        recruitType: normalizeClubRecruitType(club.recruit_type),
+        hasDongbang: club.has_dongbang,
+        dongbangLocation: club.dongbang_location?.trim() ?? '',
+        minActivityPeriod: club.min_activity_period,
+        sns: club.sns,
+        introduction: club.introduction,
+        status: PENDING_CLUB_STATUS,
+        approvedAt: null,
+        rejectReason: '',
+      })
+
+      const created = await clubRepository.save(entity)
+      await clubManagerRepository.insert({
+        clubId: created.uuid,
+        serviceUserId,
+        name: managerData.name,
+        phone: managerData.phone,
+        studentId: managerData.student_id,
+      })
+    })
+  }
+
+  private async resolveClubAffiliation(
+    affiliation: string,
+  ): Promise<{ affiliationType: string; collegeMajorId: number | null }> {
+    if (['중앙동아리', '연합동아리', '기타'].includes(affiliation)) {
+      return {
+        affiliationType: affiliation,
+        collegeMajorId: null,
+      }
+    }
+
+    const major = await this.collegeMajorRepository.findOne({
+      where: {
+        major: affiliation,
+      },
+    })
+    if (major) {
+      return {
+        affiliationType: '소속동아리',
+        collegeMajorId: major.id,
+      }
+    }
+
+    const college = await this.collegeMajorRepository.findOne({
+      where: {
+        college: affiliation,
+        major: IsNull(),
+      },
+    })
+    if (college) {
+      return {
+        affiliationType: '소속동아리',
+        collegeMajorId: college.id,
+      }
+    }
+
+    throw new BadRequestError('유효하지 않은 동아리 소속입니다.')
   }
 
   async decideClubCreationRequest(clubUuid: string, decision: ClubCreationDecision): Promise<Club> {

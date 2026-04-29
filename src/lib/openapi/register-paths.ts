@@ -39,6 +39,7 @@ import {
 import {
   ClubImageUploadSchema,
   ClubCreationDecisionSchema,
+  ClubRegisterRequestSchema,
   ClubManagerRegisterRequestSchema,
   CreateClubCreationRequestSchema,
   ManagedClubsResponseSchema,
@@ -437,6 +438,39 @@ registry.registerPath({
       },
     },
     400: validationErrorResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/clubs/register',
+  tags: ['Clubs'],
+  summary: '동아리 등록 신청',
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: ClubRegisterRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: '동아리 등록 신청 성공',
+      content: {
+        'application/json': {
+          schema: z.object({
+            success: z.literal(true),
+            message: z.string(),
+          }),
+        },
+      },
+    },
+    400: validationErrorResponse,
+    401: unauthorizedResponse,
     500: internalServerErrorResponse,
   },
 })

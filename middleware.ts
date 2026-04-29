@@ -55,6 +55,7 @@ export const config = {
     '/api/v1/clubs/:uuid?/reviews',
     '/api/v1/clubs/:uuid?/reviews/me',
     '/api/v1/clubs/:uuid?/saved',
+    '/api/v1/clubs/register',
     '/api/v1/managers/me/clubs',
     '/api/v1/managers/me/clubs/:uuid?',
     '/api/v1/managers/me/clubs/:uuid?/recruitments',
