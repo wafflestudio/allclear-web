@@ -130,8 +130,12 @@ export type ClubCreationDecision = z.infer<typeof ClubCreationDecisionSchema>
 
 export const ManagedClubsResponseSchema = z
   .object({
-    clubs: z.array(ClubSchema),
-    totalSize: z.number().int(),
+    success: z.literal(true),
+    message: z.string(),
+    data: z.object({
+      total_count: z.number().int(),
+      clubs: z.array(ClubSchema),
+    }),
   })
   .openapi('ManagedClubsResponse')
 

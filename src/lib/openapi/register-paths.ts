@@ -149,7 +149,7 @@ registry.registerPath({
         },
       },
     },
-    404: notFoundResponse,
+    401: unauthorizedResponse,
     500: internalServerErrorResponse,
   },
 })
