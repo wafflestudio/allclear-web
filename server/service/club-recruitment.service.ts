@@ -4,7 +4,7 @@ import { ClubEntity } from '../infra/database/entities'
 import { ClubManagerEntity } from '../infra/database/entities/club-manager.entity'
 import { ClubRecruitmentEntity } from '../infra/database/entities/club-recruitment.entity'
 import { RegularMeetingEntity } from '../infra/database/entities/regular-meeting.entity'
-import { ConflictError, NotFoundError } from '../domain/error'
+import { ConflictError, ForbiddenError, NotFoundError } from '../domain/error'
 import { PUBLIC_CLUB_STATUS } from 'src/common/constants/club-status'
 import { ClubRecruitment, toClubRecruitmentDomain } from '../domain/model/ClubRecruitment'
 import { UpsertClubRecruitment } from 'src/lib/schemas/club-recruitments'
@@ -112,7 +112,7 @@ export class ClubRecruitmentService {
       })
 
       const created = await this.saveOrThrowConflict(entity, clubRecruitmentRepository)
-      const regularMeetings = this.toRegularMeetingEntities(recruitment.regularMeetings).map(
+      const regularMeetings = this.toRegularMeetingEntities(recruitment.regular_meetings).map(
         (regularMeeting) => ({
           ...regularMeeting,
           clubRecruitmentId: created.id,
@@ -146,7 +146,7 @@ export class ClubRecruitmentService {
 
       await regularMeetingRepository.delete({ clubRecruitmentId: entity.id })
       const updated = await this.saveOrThrowConflict(entity, clubRecruitmentRepository)
-      const regularMeetings = this.toRegularMeetingEntities(recruitment.regularMeetings).map(
+      const regularMeetings = this.toRegularMeetingEntities(recruitment.regular_meetings).map(
         (regularMeeting) => ({
           ...regularMeeting,
           clubRecruitmentId: updated.id,
@@ -190,30 +190,30 @@ export class ClubRecruitmentService {
     return {
       title: recruitment.title,
       deadline: new Date(recruitment.deadline).toISOString(),
-      isMandatory: recruitment.isMandatory,
-      hasRegularMeeting: recruitment.hasRegularMeeting,
-      activityLocationType: recruitment.activityLocationType,
-      activityLocationText: recruitment.activityLocationText,
-      hasEligibility: recruitment.hasEligibility,
-      eligibilityText: recruitment.eligibilityText,
-      hasCapacityLimit: recruitment.hasCapacityLimit,
-      capacityLimitText: recruitment.capacityLimitText,
-      hasMembershipFee: recruitment.hasMembershipFee,
-      membershipFeeText: recruitment.membershipFeeText,
-      applicationUrl: recruitment.applicationUrl,
-      applicationProcess: recruitment.applicationProcess,
-      fullRecruitmentText: recruitment.fullRecruitmentText,
-      imageUrls: recruitment.imageUrls,
+      isMandatory: recruitment.is_mandatory,
+      hasRegularMeeting: recruitment.has_regular_meeting,
+      activityLocationType: recruitment.activity_location_type,
+      activityLocationText: recruitment.activity_location_text,
+      hasEligibility: recruitment.has_eligibility,
+      eligibilityText: recruitment.eligibility_text,
+      hasCapacityLimit: recruitment.has_capacity_limit,
+      capacityLimitText: recruitment.capacity_limit_text,
+      hasMembershipFee: recruitment.has_membership_fee,
+      membershipFeeText: recruitment.membership_fee_text,
+      applicationUrl: recruitment.application_url,
+      applicationProcess: recruitment.application_process,
+      fullRecruitmentText: recruitment.full_recruitment_text,
+      imageUrls: recruitment.image_urls,
     }
   }
 
   private toRegularMeetingEntities(
-    regularMeetings: UpsertClubRecruitment['regularMeetings'],
+    regularMeetings: UpsertClubRecruitment['regular_meetings'],
   ): Partial<RegularMeetingEntity>[] {
     return regularMeetings.map((regularMeeting) => ({
-      dayOfWeek: regularMeeting.dayOfWeek,
-      startTime: regularMeeting.startTime,
-      endTime: regularMeeting.endTime,
+      dayOfWeek: regularMeeting.day_of_week,
+      startTime: regularMeeting.start_time,
+      endTime: regularMeeting.end_time,
     }))
   }
 
@@ -270,8 +270,11 @@ export class ClubRecruitmentService {
       }),
     ])
 
-    if (!club || !clubManager) {
+    if (!club) {
       throw new NotFoundError('club not found')
+    }
+    if (!clubManager) {
+      throw new ForbiddenError('not a manager of this club')
     }
   }
 

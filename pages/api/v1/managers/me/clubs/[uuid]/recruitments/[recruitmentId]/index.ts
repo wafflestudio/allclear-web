@@ -3,7 +3,12 @@ import { z, ZodIssue } from 'zod'
 import { Provider } from 'server/provider'
 import { ClubRecruitmentService } from 'server/service/club-recruitment.service'
 import { UserService } from 'server/service/user.service'
-import { ConflictError, NotFoundError, UserNotFoundError } from 'server/domain/error'
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  UserNotFoundError,
+} from 'server/domain/error'
 import {
   ClubRecruitmentIdParamsSchema,
   UpsertClubRecruitmentSchema,
@@ -50,6 +55,9 @@ export default async function handler(
     }
     if (err instanceof NotFoundError) {
       return res.status(404).send('resource not found')
+    }
+    if (err instanceof ForbiddenError) {
+      return res.status(403).send('forbidden')
     }
     if (err instanceof ConflictError) {
       return res.status(409).send(err.message)
