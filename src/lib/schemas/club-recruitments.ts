@@ -20,6 +20,8 @@ const BooleanInputSchema = z.preprocess((value) => {
   return value
 }, z.boolean())
 
+const RequiredStringSchema = z.string().trim().min(1)
+
 const TrimmedStringSchema = z.preprocess((value) => {
   if (value === null || value === undefined) {
     return ''
@@ -41,6 +43,14 @@ export const RegularMeetingSchema = z
   })
   .openapi('RegularMeeting')
 
+export const UpsertRegularMeetingSchema = z
+  .object({
+    day_of_week: z.enum(REGULAR_MEETING_DAYS),
+    start_time: z.string().nullable(),
+    end_time: z.string().nullable(),
+  })
+  .openapi('UpsertRegularMeeting')
+
 export const ClubRecruitmentParamsSchema = z
   .object({
     uuid: z.string().uuid(),
@@ -56,30 +66,42 @@ export const ClubRecruitmentIdParamsSchema = z
 
 export const UpsertClubRecruitmentSchema = z
   .object({
-    title: TrimmedStringSchema,
+    title: RequiredStringSchema,
     deadline: TimestampStringSchema,
-    isMandatory: BooleanInputSchema,
-    hasRegularMeeting: BooleanInputSchema,
-    regularMeetings: z
-      .array(RegularMeetingSchema.omit({ id: true }))
-      .optional()
-      .default([]),
-    activityLocationType: z.enum(CLUB_RECRUITMENT_ACTIVITY_LOCATION_TYPES),
-    activityLocationText: TrimmedStringSchema,
-    hasEligibility: BooleanInputSchema,
-    eligibilityText: TrimmedStringSchema,
-    hasCapacityLimit: BooleanInputSchema,
-    capacityLimitText: TrimmedStringSchema,
-    hasMembershipFee: BooleanInputSchema,
-    membershipFeeText: TrimmedStringSchema,
-    applicationUrl: TrimmedStringSchema,
-    applicationProcess: TrimmedStringSchema,
-    fullRecruitmentText: NullableTrimmedStringSchema,
-    imageUrls: z.array(z.string()).optional().default([]),
+    is_mandatory: BooleanInputSchema,
+    has_regular_meeting: BooleanInputSchema,
+    regular_meetings: z.array(UpsertRegularMeetingSchema).optional().default([]),
+    activity_location_type: z.enum(CLUB_RECRUITMENT_ACTIVITY_LOCATION_TYPES),
+    activity_location_text: TrimmedStringSchema.optional().default(''),
+    has_eligibility: BooleanInputSchema,
+    eligibility_text: TrimmedStringSchema.optional().default(''),
+    has_capacity_limit: BooleanInputSchema,
+    capacity_limit_text: TrimmedStringSchema.optional().default(''),
+    has_membership_fee: BooleanInputSchema,
+    membership_fee_text: TrimmedStringSchema.optional().default(''),
+    application_url: RequiredStringSchema,
+    application_process: RequiredStringSchema,
+    full_recruitment_text: NullableTrimmedStringSchema.optional().default(null),
+    image_urls: z.array(z.string()).optional().default([]),
   })
   .openapi('UpsertClubRecruitment')
 
 export type UpsertClubRecruitment = z.infer<typeof UpsertClubRecruitmentSchema>
+
+export const CreateRecruitmentResponseSchema = z
+  .object({
+    success: z.boolean(),
+    message: z.string(),
+    data: z.object({
+      recruitment_id: z.string(),
+      club_uuid: z.string().uuid(),
+      year_month: z.string().regex(/^\d{4}-\d{2}$/),
+      deadline: z.string(),
+    }),
+  })
+  .openapi('CreateRecruitmentResponse')
+
+export type CreateRecruitmentResponse = z.infer<typeof CreateRecruitmentResponseSchema>
 
 export const ClubRecruitmentSchema = z
   .object({
