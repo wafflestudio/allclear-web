@@ -3,10 +3,15 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies'
 import {
   AccountEntity,
   AccountUserEntity,
+  AnnouncementDismissEntity,
+  AnnouncementEntity,
   ClubEntity,
   ClubRecruitmentEntity,
+  RegularMeetingEntity,
   DeviceEntity,
   ServiceUserEntity,
+  TermsAgreementEntity,
+  TermsEntity,
   UserActivityLogEntity,
   UserEntity,
 } from './entities'
@@ -19,6 +24,8 @@ import { UserVoiceEntity } from './entities/user-voice.entity'
 import { UserSavedClubEntity } from './entities/user-saved-club.entity'
 import { CollegeMajorEntity } from './entities/college-major.entity'
 import { ClubManagerRegisterRequestEntity } from './entities/club-manager-register-request.entity'
+import { ClubHistoryEntity } from './entities/club-history.entity'
+import { ClubVerificationRequestEntity } from './entities/club-verification-request.entity'
 
 export const MAIN_DATA_SOURCE_OPTIONS: DataSourceOptions = {
   type: 'postgres',
@@ -30,15 +37,22 @@ export const MAIN_DATA_SOURCE_OPTIONS: DataSourceOptions = {
     AccountUserEntity,
     ServiceUserEntity,
     DeviceEntity,
+    AnnouncementEntity,
+    AnnouncementDismissEntity,
     UserActivityLogEntity,
     ClubEntity,
     ClubRecruitmentEntity,
+    RegularMeetingEntity,
     ClubReviewKeywordEntity,
     ClubReviewKeywordCategoryEntity,
     UserClubReviewEntity,
     UserSavedClubEntity,
     ClubManagerEntity,
     ClubManagerRegisterRequestEntity,
+    ClubVerificationRequestEntity,
+    ClubHistoryEntity,
+    TermsEntity,
+    TermsAgreementEntity,
     UserVoiceEntity,
     CollegeMajorEntity,
   ],

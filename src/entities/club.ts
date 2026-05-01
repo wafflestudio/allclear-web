@@ -2,7 +2,7 @@ import type { ClubStatus } from 'src/common/constants/club-status'
 
 export type ClubCollegeMajor = {
   id: number
-  college: string
+  college: string | null
   major: string | null
 }
 
@@ -21,6 +21,8 @@ export type Club = {
   collegeMajorId: number | null
   collegeMajor: ClubCollegeMajor | null
   recruitType: string
+  isOfficialVerified: boolean
+  verifiedAt: string | null
   isPopular: boolean
   hasDongbang: boolean
   dongbangLocation: string

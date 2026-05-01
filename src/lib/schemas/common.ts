@@ -32,7 +32,7 @@ export const TokenResponseSchema = z
 export const CollegeMajorSchema = z
   .object({
     id: z.number().int(),
-    college: z.string(),
+    college: z.string().nullable(),
     major: z.string().nullable(),
   })
   .openapi('CollegeMajor')
@@ -69,6 +69,25 @@ export const ClubCategorySchema = z
 
 export const ClubStatusSchema = z.enum(CLUB_STATUSES).openapi('ClubStatus')
 
+export const AnnouncementSchema = z
+  .object({
+    uuid: z.string().uuid(),
+    title: z.string(),
+    content: z.string(),
+  })
+  .openapi('Announcement')
+
+export const TermsSchema = z
+  .object({
+    uuid: z.string().uuid(),
+    termsKey: z.string(),
+    title: z.string(),
+    contentUrl: z.string(),
+    version: z.string(),
+    isMandatory: z.boolean(),
+  })
+  .openapi('Terms')
+
 export const UserSchema = z
   .object({
     id: z.string(),
@@ -103,6 +122,8 @@ export const ClubSchema = z
     collegeMajorId: z.number().nullable(),
     collegeMajor: CollegeMajorSchema.nullable(),
     recruitType: z.enum(CLUB_RECRUIT_TYPES),
+    isOfficialVerified: z.boolean(),
+    verifiedAt: z.string().nullable(),
     isPopular: z.boolean(),
     hasDongbang: z.boolean(),
     dongbangLocation: z.string(),

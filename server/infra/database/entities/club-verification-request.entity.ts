@@ -1,24 +1,12 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm'
 
-@Entity('club_manager_request')
-export class ClubManagerRegisterRequestEntity {
+@Entity('club_verification_request')
+export class ClubVerificationRequestEntity {
   @PrimaryGeneratedColumn('increment', { type: 'bigint', name: 'id' })
   id: string
 
-  @Column({ type: 'uuid', name: 'service_user_id' })
-  serviceUserId: string
-
-  @Column('uuid', { name: 'club_id' })
+  @Column({ type: 'uuid', name: 'club_id' })
   clubId: string
-
-  @Column({ type: 'varchar', name: 'name' })
-  name: string
-
-  @Column({ type: 'varchar', name: 'phone' })
-  phone: string
-
-  @Column({ type: 'varchar', name: 'student_id' })
-  studentId: string
 
   @Column({ type: 'varchar', default: 'PENDING', name: 'status' })
   status: string

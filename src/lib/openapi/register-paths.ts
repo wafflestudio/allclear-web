@@ -13,6 +13,8 @@ import {
   KakaoCallbackQuerySchema,
   KakaoNativeCallbackPayloadSchema,
 } from 'src/lib/schemas/auth'
+import { AnnouncementsResponseSchema } from 'src/lib/schemas/announcements'
+import { TermsResponseSchema } from 'src/lib/schemas/terms'
 import {
   ClubCategoriesResponseSchema,
   ClubListByCategoryQuerySchema,
@@ -101,6 +103,46 @@ const conflictResponse = {
     },
   },
 }
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/announcements',
+  tags: ['Announcements'],
+  summary: '노출할 공지 목록 조회',
+  security: [{}, { bearerAuth: [] }],
+  responses: {
+    200: {
+      description: '조회 성공',
+      content: {
+        'application/json': {
+          schema: AnnouncementsResponseSchema,
+        },
+      },
+    },
+    401: unauthorizedResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/terms',
+  tags: ['Terms'],
+  summary: '미동의 약관 목록 조회',
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      description: '조회 성공',
+      content: {
+        'application/json': {
+          schema: TermsResponseSchema,
+        },
+      },
+    },
+    404: notFoundResponse,
+    500: internalServerErrorResponse,
+  },
+})
 
 registry.registerPath({
   method: 'get',

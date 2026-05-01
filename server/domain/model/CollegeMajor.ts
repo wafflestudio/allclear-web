@@ -1,5 +1,5 @@
 export type CollegeMajor = {
   id: number
-  college: string
+  college: string | null
   major: string | null
 }

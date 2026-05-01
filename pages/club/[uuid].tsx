@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react'
 import { useRouter } from 'next/router'
 
-const appstore =
-  'https://apps.apple.com/kr/app/%EC%98%AC%ED%81%B4/id6461214029'
+const appstore = 'https://apps.apple.com/kr/app/%EC%98%AC%ED%81%B4/id6461214029'
 
 const ClubDeepLink = () => {
   const router = useRouter()
