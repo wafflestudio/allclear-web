@@ -7,7 +7,7 @@ import { RegularMeetingEntity } from '../infra/database/entities/regular-meeting
 import { ConflictError, ForbiddenError, NotFoundError } from '../domain/error'
 import { PUBLIC_CLUB_STATUS } from 'src/common/constants/club-status'
 import { ClubRecruitment, toClubRecruitmentDomain } from '../domain/model/ClubRecruitment'
-import { UpsertClubRecruitment } from 'src/lib/schemas/club-recruitments'
+import { CreateClubRecruitment, UpdateClubRecruitment } from 'src/lib/schemas/club-recruitments'
 import { formatYearMonth } from 'src/common/utils/formatYearMonth'
 
 @Service
@@ -22,15 +22,9 @@ export class ClubRecruitmentService {
   async findPublicRecruitmentsByClub(clubUuid: string): Promise<ClubRecruitment[]> {
     await this.assertPublicClubExists(clubUuid)
     const recruitments = await this.clubRecruitmentRepository.find({
-      where: {
-        clubId: clubUuid,
-        deletedAt: IsNull(),
-      },
-      order: {
-        createdAt: 'DESC',
-      },
+      where: { clubId: clubUuid, deletedAt: IsNull() },
+      order: { createdAt: 'DESC' },
     })
-
     return recruitments.map((it) => toClubRecruitmentDomain(it))
   }
 
@@ -39,16 +33,9 @@ export class ClubRecruitmentService {
   ): Promise<ClubRecruitment | null> {
     await this.assertPublicClubExists(clubUuid)
     const recruitment = await this.clubRecruitmentRepository.findOne({
-      where: {
-        clubId: clubUuid,
-        deletedAt: IsNull(),
-      },
-      order: {
-        yearMonth: 'DESC',
-        createdAt: 'DESC',
-      },
+      where: { clubId: clubUuid, deletedAt: IsNull() },
+      order: { yearMonth: 'DESC', createdAt: 'DESC' },
     })
-
     return recruitment ? toClubRecruitmentDomain(recruitment) : null
   }
 
@@ -67,15 +54,9 @@ export class ClubRecruitmentService {
   ): Promise<ClubRecruitment[]> {
     await this.assertManagedClubExists(clubUuid, serviceUserId)
     const recruitments = await this.clubRecruitmentRepository.find({
-      where: {
-        clubId: clubUuid,
-        deletedAt: IsNull(),
-      },
-      order: {
-        createdAt: 'DESC',
-      },
+      where: { clubId: clubUuid, deletedAt: IsNull() },
+      order: { createdAt: 'DESC' },
     })
-
     return recruitments.map((it) => toClubRecruitmentDomain(it))
   }
 
@@ -95,7 +76,7 @@ export class ClubRecruitmentService {
   async createRecruitment(
     clubUuid: string,
     serviceUserId: string,
-    recruitment: UpsertClubRecruitment,
+    recruitment: CreateClubRecruitment,
   ): Promise<ClubRecruitment> {
     await this.assertManagedClubExists(clubUuid, serviceUserId)
 
@@ -113,10 +94,7 @@ export class ClubRecruitmentService {
 
       const created = await this.saveOrThrowConflict(entity, clubRecruitmentRepository)
       const regularMeetings = this.toRegularMeetingEntities(recruitment.regular_meetings).map(
-        (regularMeeting) => ({
-          ...regularMeeting,
-          clubRecruitmentId: created.id,
-        }),
+        (regularMeeting) => ({ ...regularMeeting, clubRecruitmentId: created.id }),
       )
       if (regularMeetings.length > 0) {
         await regularMeetingRepository.insert(regularMeetings)
@@ -127,35 +105,37 @@ export class ClubRecruitmentService {
   }
 
   async updateRecruitment(
-    clubUuid: string,
     recruitmentId: string,
     serviceUserId: string,
-    recruitment: UpsertClubRecruitment,
+    data: UpdateClubRecruitment,
   ): Promise<ClubRecruitment> {
-    const entity = await this.getManagedRecruitmentEntity(clubUuid, recruitmentId, serviceUserId)
+    const entity = await this.clubRecruitmentRepository.findOne({
+      where: { id: recruitmentId, deletedAt: IsNull() },
+    })
+    if (!entity) {
+      throw new NotFoundError('recruitment not found')
+    }
+
+    await this.assertManagedClubExists(entity.clubId, serviceUserId)
 
     const saved = await this.clubRecruitmentRepository.manager.transaction(async (manager) => {
       const clubRecruitmentRepository = manager.getRepository(ClubRecruitmentEntity)
       const regularMeetingRepository = manager.getRepository(RegularMeetingEntity)
 
-      Object.assign(entity, this.toPersistencePayload(recruitment), {
-        regularMeetings: [],
-        updatedAt: new Date().toISOString(),
-        yearMonth: formatYearMonth(entity.createdAt),
-      })
-
-      await regularMeetingRepository.delete({ clubRecruitmentId: entity.id })
+      Object.assign(entity, this.toUpdatePayload(data), { updatedAt: new Date().toISOString() })
       const updated = await this.saveOrThrowConflict(entity, clubRecruitmentRepository)
-      const regularMeetings = this.toRegularMeetingEntities(recruitment.regular_meetings).map(
-        (regularMeeting) => ({
-          ...regularMeeting,
-          clubRecruitmentId: updated.id,
-        }),
-      )
-      if (regularMeetings.length > 0) {
-        await regularMeetingRepository.insert(regularMeetings)
+
+      if (data.regular_meetings !== undefined) {
+        await regularMeetingRepository.delete({ clubRecruitmentId: entity.id })
+        const regularMeetings = this.toRegularMeetingEntities(data.regular_meetings).map(
+          (regularMeeting) => ({ ...regularMeeting, clubRecruitmentId: updated.id }),
+        )
+        if (regularMeetings.length > 0) {
+          await regularMeetingRepository.insert(regularMeetings)
+        }
       }
-      return this.getRecruitmentEntity(clubUuid, recruitmentId, clubRecruitmentRepository)
+
+      return this.getRecruitmentEntity(entity.clubId, recruitmentId, clubRecruitmentRepository)
     })
 
     return toClubRecruitmentDomain(saved)
@@ -175,7 +155,7 @@ export class ClubRecruitmentService {
   }
 
   private toPersistencePayload(
-    recruitment: UpsertClubRecruitment,
+    recruitment: CreateClubRecruitment,
   ): Omit<
     ClubRecruitmentEntity,
     | 'id'
@@ -207,8 +187,30 @@ export class ClubRecruitmentService {
     }
   }
 
+  private toUpdatePayload(data: UpdateClubRecruitment): Partial<ClubRecruitmentEntity> {
+    const raw = {
+      title: data.title,
+      deadline: data.deadline !== undefined ? new Date(data.deadline).toISOString() : undefined,
+      isMandatory: data.is_mandatory,
+      hasRegularMeeting: data.has_regular_meeting,
+      activityLocationType: data.activity_location_type,
+      activityLocationText: data.activity_location_text,
+      hasEligibility: data.has_eligibility,
+      eligibilityText: data.eligibility_text,
+      hasCapacityLimit: data.has_capacity_limit,
+      capacityLimitText: data.capacity_limit_text,
+      hasMembershipFee: data.has_membership_fee,
+      membershipFeeText: data.membership_fee_text,
+      applicationUrl: data.application_url,
+      applicationProcess: data.application_process,
+      fullRecruitmentText: data.full_recruitment_text,
+      imageUrls: data.image_urls,
+    }
+    return Object.fromEntries(Object.entries(raw).filter(([, v]) => v !== undefined))
+  }
+
   private toRegularMeetingEntities(
-    regularMeetings: UpsertClubRecruitment['regular_meetings'],
+    regularMeetings: CreateClubRecruitment['regular_meetings'],
   ): Partial<RegularMeetingEntity>[] {
     return regularMeetings.map((regularMeeting) => ({
       dayOfWeek: regularMeeting.day_of_week,
@@ -232,17 +234,11 @@ export class ClubRecruitmentService {
     repository: Repository<ClubRecruitmentEntity> = this.clubRecruitmentRepository,
   ): Promise<ClubRecruitmentEntity> {
     const recruitment = await repository.findOne({
-      where: {
-        id: recruitmentId,
-        clubId: clubUuid,
-        deletedAt: IsNull(),
-      },
+      where: { id: recruitmentId, clubId: clubUuid, deletedAt: IsNull() },
     })
-
     if (!recruitment) {
       throw new NotFoundError('recruitment not found')
     }
-
     return recruitment
   }
 
@@ -252,7 +248,6 @@ export class ClubRecruitmentService {
       status: PUBLIC_CLUB_STATUS,
       deletedAt: IsNull(),
     })
-
     if (!club) {
       throw new NotFoundError('club not found')
     }
@@ -260,16 +255,9 @@ export class ClubRecruitmentService {
 
   private async assertManagedClubExists(clubUuid: string, serviceUserId: string): Promise<void> {
     const [club, clubManager] = await Promise.all([
-      this.clubRepository.findOneBy({
-        uuid: clubUuid,
-        deletedAt: IsNull(),
-      }),
-      this.clubManagerRepository.findOneBy({
-        clubId: clubUuid,
-        serviceUserId,
-      }),
+      this.clubRepository.findOneBy({ uuid: clubUuid, deletedAt: IsNull() }),
+      this.clubManagerRepository.findOneBy({ clubId: clubUuid, serviceUserId }),
     ])
-
     if (!club) {
       throw new NotFoundError('club not found')
     }
@@ -296,13 +284,9 @@ export class ClubRecruitmentService {
     if (!(error instanceof QueryFailedError)) {
       return false
     }
-
     const driverError = (
-      error as QueryFailedError & {
-        driverError?: { code?: string; constraint?: string }
-      }
+      error as QueryFailedError & { driverError?: { code?: string; constraint?: string } }
     ).driverError
-
     return (
       driverError?.code === '23505' && driverError?.constraint === 'idx_unique_club_month_active'
     )

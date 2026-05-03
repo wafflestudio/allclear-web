@@ -64,7 +64,13 @@ export const ClubRecruitmentIdParamsSchema = z
   })
   .openapi('ClubRecruitmentIdParams')
 
-export const UpsertClubRecruitmentSchema = z
+export const RecruitmentIdParamsSchema = z
+  .object({
+    recruitmentId: z.string().regex(/^\d+$/),
+  })
+  .openapi('RecruitmentIdParams')
+
+export const CreateClubRecruitmentSchema = z
   .object({
     title: RequiredStringSchema,
     deadline: TimestampStringSchema,
@@ -84,9 +90,33 @@ export const UpsertClubRecruitmentSchema = z
     full_recruitment_text: NullableTrimmedStringSchema.optional().default(null),
     image_urls: z.array(z.string()).optional().default([]),
   })
-  .openapi('UpsertClubRecruitment')
+  .openapi('CreateClubRecruitment')
 
-export type UpsertClubRecruitment = z.infer<typeof UpsertClubRecruitmentSchema>
+export type CreateClubRecruitment = z.infer<typeof CreateClubRecruitmentSchema>
+
+export const UpdateClubRecruitmentSchema = z
+  .object({
+    title: RequiredStringSchema.optional(),
+    deadline: TimestampStringSchema.optional(),
+    is_mandatory: BooleanInputSchema.optional(),
+    has_regular_meeting: BooleanInputSchema.optional(),
+    regular_meetings: z.array(UpsertRegularMeetingSchema).optional(),
+    activity_location_type: z.enum(CLUB_RECRUITMENT_ACTIVITY_LOCATION_TYPES).optional(),
+    activity_location_text: TrimmedStringSchema.optional(),
+    has_eligibility: BooleanInputSchema.optional(),
+    eligibility_text: TrimmedStringSchema.optional(),
+    has_capacity_limit: BooleanInputSchema.optional(),
+    capacity_limit_text: TrimmedStringSchema.optional(),
+    has_membership_fee: BooleanInputSchema.optional(),
+    membership_fee_text: TrimmedStringSchema.optional(),
+    application_url: RequiredStringSchema.optional(),
+    application_process: RequiredStringSchema.optional(),
+    full_recruitment_text: NullableTrimmedStringSchema.optional(),
+    image_urls: z.array(z.string()).optional(),
+  })
+  .openapi('UpdateClubRecruitment')
+
+export type UpdateClubRecruitment = z.infer<typeof UpdateClubRecruitmentSchema>
 
 export const CreateRecruitmentResponseSchema = z
   .object({
@@ -102,6 +132,22 @@ export const CreateRecruitmentResponseSchema = z
   .openapi('CreateRecruitmentResponse')
 
 export type CreateRecruitmentResponse = z.infer<typeof CreateRecruitmentResponseSchema>
+
+export const UpdateRecruitmentResponseSchema = z
+  .object({
+    success: z.boolean(),
+    message: z.string(),
+    data: z.object({
+      recruitment_id: z.string(),
+      club_uuid: z.string().uuid(),
+      year_month: z.string().regex(/^\d{4}-\d{2}$/),
+      deadline: z.string(),
+      updated_at: z.string(),
+    }),
+  })
+  .openapi('UpdateRecruitmentResponse')
+
+export type UpdateRecruitmentResponse = z.infer<typeof UpdateRecruitmentResponseSchema>
 
 export const ClubRecruitmentSchema = z
   .object({

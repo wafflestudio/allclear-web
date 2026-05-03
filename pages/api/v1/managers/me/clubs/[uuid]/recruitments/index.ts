@@ -11,7 +11,7 @@ import {
 } from 'server/domain/error'
 import {
   ClubRecruitmentParamsSchema,
-  UpsertClubRecruitmentSchema,
+  CreateClubRecruitmentSchema,
   type ClubRecruitmentsResponse,
   type CreateRecruitmentResponse,
 } from 'src/lib/schemas/club-recruitments'
@@ -38,7 +38,7 @@ export default async function handler(
     }
 
     if (req.method === 'POST') {
-      const body = UpsertClubRecruitmentSchema.parse(req.body)
+      const body = CreateClubRecruitmentSchema.parse(req.body)
       const recruitment = await clubRecruitmentService.createRecruitment(
         clubUuid,
         user.serviceUserId,

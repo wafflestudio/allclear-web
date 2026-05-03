@@ -61,5 +61,6 @@ export const config = {
     '/api/v1/managers/me/clubs/:uuid?/recruitments',
     '/api/v1/managers/me/clubs/:uuid?/recruitments/:recruitmentId?',
     '/api/v1/managers/me/clubs/:uuid?/images',
+    '/api/v1/managers/me/recruitments/:recruitmentId?',
   ],
 }
