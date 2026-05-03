@@ -48,6 +48,7 @@ import {
   ManagedClubPatchSchema,
   ManagedClubsResponseSchema,
   ManagerClubParamsSchema,
+  CreateVerificationRequestResponseSchema,
 } from 'src/lib/schemas/managers'
 import {
   CollegeMajorsQuerySchema,
@@ -1066,6 +1067,32 @@ registry.registerPath({
     401: unauthorizedResponse,
     403: forbiddenResponse,
     404: notFoundResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/v1/managers/me/clubs/{uuid}/verifications',
+  tags: ['Managers'],
+  summary: '총동연 공식 인증 요청',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: ClubUuidParamsSchema,
+  },
+  responses: {
+    201: {
+      description: '인증 요청 성공',
+      content: {
+        'application/json': {
+          schema: CreateVerificationRequestResponseSchema,
+        },
+      },
+    },
+    401: unauthorizedResponse,
+    403: forbiddenResponse,
+    404: notFoundResponse,
+    409: conflictResponse,
     500: internalServerErrorResponse,
   },
 })

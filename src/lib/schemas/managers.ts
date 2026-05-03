@@ -158,3 +158,20 @@ export const ClubImageUploadSchema = z
     }),
   })
   .openapi('ClubImageUpload')
+
+export const CreateVerificationRequestResponseSchema = z
+  .object({
+    success: z.literal(true),
+    message: z.string(),
+    data: z.object({
+      request_id: z.string(),
+      club_uuid: z.string().uuid(),
+      status: z.literal('PENDING'),
+      created_at: z.string(),
+    }),
+  })
+  .openapi('CreateVerificationRequestResponse')
+
+export type CreateVerificationRequestResponse = z.infer<
+  typeof CreateVerificationRequestResponseSchema
+>
