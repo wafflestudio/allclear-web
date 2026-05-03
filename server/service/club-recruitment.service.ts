@@ -141,16 +141,14 @@ export class ClubRecruitmentService {
     return toClubRecruitmentDomain(saved)
   }
 
-  async deleteRecruitment(
-    clubUuid: string,
-    recruitmentId: string,
-    serviceUserId: string,
-  ): Promise<void> {
-    const recruitment = await this.getManagedRecruitmentEntity(
-      clubUuid,
-      recruitmentId,
-      serviceUserId,
-    )
+  async deleteRecruitment(recruitmentId: string, serviceUserId: string): Promise<void> {
+    const recruitment = await this.clubRecruitmentRepository.findOne({
+      where: { id: recruitmentId, deletedAt: IsNull() },
+    })
+    if (!recruitment) {
+      throw new NotFoundError('recruitment not found')
+    }
+    await this.assertManagedClubExists(recruitment.clubId, serviceUserId)
     await this.clubRecruitmentRepository.softDelete(recruitment.id)
   }
 

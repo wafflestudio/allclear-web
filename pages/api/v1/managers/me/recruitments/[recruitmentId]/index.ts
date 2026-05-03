@@ -20,6 +20,11 @@ export default async function handler(
     const user = await userService.getUserByAccountId(req.headers.user as string)
     const { recruitmentId } = RecruitmentIdParamsSchema.parse(req.query)
 
+    if (req.method === 'DELETE') {
+      await clubRecruitmentService.deleteRecruitment(recruitmentId, user.serviceUserId)
+      return res.status(204).end()
+    }
+
     if (req.method === 'PATCH') {
       const body = UpdateClubRecruitmentSchema.parse(req.body)
       const recruitment = await clubRecruitmentService.updateRecruitment(

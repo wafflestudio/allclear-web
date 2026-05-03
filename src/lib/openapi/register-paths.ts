@@ -47,7 +47,6 @@ import {
   ClubManagerRegisterRequestSchema,
   ManagedClubPatchSchema,
   ManagedClubsResponseSchema,
-  ManagedClubUpdateSchema,
   ManagerClubParamsSchema,
 } from 'src/lib/schemas/managers'
 import {
@@ -1013,6 +1012,24 @@ registry.registerPath({
       },
     },
     400: validationErrorResponse,
+    401: unauthorizedResponse,
+    403: forbiddenResponse,
+    404: notFoundResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v1/managers/me/recruitments/{recruitmentId}',
+  tags: ['Managers'],
+  summary: '모집공고 삭제',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: RecruitmentIdParamsSchema,
+  },
+  responses: {
+    204: { description: '삭제 성공' },
     401: unauthorizedResponse,
     403: forbiddenResponse,
     404: notFoundResponse,
