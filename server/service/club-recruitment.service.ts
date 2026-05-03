@@ -3,6 +3,7 @@ import { InjectRepository, Service } from '../provider'
 import { ClubEntity } from '../infra/database/entities'
 import { ClubManagerEntity } from '../infra/database/entities/club-manager.entity'
 import { ClubRecruitmentEntity } from '../infra/database/entities/club-recruitment.entity'
+import { RegularMeetingEntity } from '../infra/database/entities/regular-meeting.entity'
 import { ConflictError, NotFoundError } from '../domain/error'
 import { PUBLIC_CLUB_STATUS } from 'src/common/constants/club-status'
 import { ClubRecruitment, toClubRecruitmentDomain } from '../domain/model/ClubRecruitment'
@@ -99,15 +100,29 @@ export class ClubRecruitmentService {
     await this.assertManagedClubExists(clubUuid, serviceUserId)
 
     const now = new Date().toISOString()
-    const entity = this.clubRecruitmentRepository.create({
-      clubId: clubUuid,
-      ...this.toPersistencePayload(recruitment),
-      createdAt: now,
-      updatedAt: now,
-      yearMonth: formatYearMonth(now),
-    })
+    const saved = await this.clubRecruitmentRepository.manager.transaction(async (manager) => {
+      const clubRecruitmentRepository = manager.getRepository(ClubRecruitmentEntity)
+      const regularMeetingRepository = manager.getRepository(RegularMeetingEntity)
+      const entity = clubRecruitmentRepository.create({
+        clubId: clubUuid,
+        ...this.toPersistencePayload(recruitment),
+        createdAt: now,
+        updatedAt: now,
+        yearMonth: formatYearMonth(now),
+      })
 
-    const saved = await this.saveOrThrowConflict(entity)
+      const created = await this.saveOrThrowConflict(entity, clubRecruitmentRepository)
+      const regularMeetings = this.toRegularMeetingEntities(recruitment.regularMeetings).map(
+        (regularMeeting) => ({
+          ...regularMeeting,
+          clubRecruitmentId: created.id,
+        }),
+      )
+      if (regularMeetings.length > 0) {
+        await regularMeetingRepository.insert(regularMeetings)
+      }
+      return this.getRecruitmentEntity(clubUuid, created.id, clubRecruitmentRepository)
+    })
     return toClubRecruitmentDomain(saved)
   }
 
@@ -119,12 +134,30 @@ export class ClubRecruitmentService {
   ): Promise<ClubRecruitment> {
     const entity = await this.getManagedRecruitmentEntity(clubUuid, recruitmentId, serviceUserId)
 
-    Object.assign(entity, this.toPersistencePayload(recruitment), {
-      updatedAt: new Date().toISOString(),
-      yearMonth: formatYearMonth(entity.createdAt),
+    const saved = await this.clubRecruitmentRepository.manager.transaction(async (manager) => {
+      const clubRecruitmentRepository = manager.getRepository(ClubRecruitmentEntity)
+      const regularMeetingRepository = manager.getRepository(RegularMeetingEntity)
+
+      Object.assign(entity, this.toPersistencePayload(recruitment), {
+        regularMeetings: [],
+        updatedAt: new Date().toISOString(),
+        yearMonth: formatYearMonth(entity.createdAt),
+      })
+
+      await regularMeetingRepository.delete({ clubRecruitmentId: entity.id })
+      const updated = await this.saveOrThrowConflict(entity, clubRecruitmentRepository)
+      const regularMeetings = this.toRegularMeetingEntities(recruitment.regularMeetings).map(
+        (regularMeeting) => ({
+          ...regularMeeting,
+          clubRecruitmentId: updated.id,
+        }),
+      )
+      if (regularMeetings.length > 0) {
+        await regularMeetingRepository.insert(regularMeetings)
+      }
+      return this.getRecruitmentEntity(clubUuid, recruitmentId, clubRecruitmentRepository)
     })
 
-    const saved = await this.saveOrThrowConflict(entity)
     return toClubRecruitmentDomain(saved)
   }
 
@@ -145,27 +178,43 @@ export class ClubRecruitmentService {
     recruitment: UpsertClubRecruitment,
   ): Omit<
     ClubRecruitmentEntity,
-    'id' | 'clubId' | 'yearMonth' | 'createdAt' | 'updatedAt' | 'deletedAt' | 'syncYearMonth'
+    | 'id'
+    | 'clubId'
+    | 'regularMeetings'
+    | 'yearMonth'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'deletedAt'
+    | 'syncYearMonth'
   > {
     return {
-      description: recruitment.description,
-      recruitType: recruitment.recruitType,
-      recruitYear: recruitment.recruitYear,
-      recruitTerm: recruitment.recruitTerm,
+      title: recruitment.title,
       deadline: new Date(recruitment.deadline).toISOString(),
-      recruitCount: recruitment.recruitCount,
-      recruitCountText: recruitment.recruitCountText,
-      isCollegeLimited: recruitment.isCollegeLimited,
-      eligibilityText: recruitment.eligibilityText,
-      applicationUrl: recruitment.applicationUrl,
-      applicationProcess: recruitment.applicationProcess,
-      hasMembershipFee: recruitment.hasMembershipFee,
-      membershipFeeText: recruitment.membershipFeeText,
+      isMandatory: recruitment.isMandatory,
+      hasRegularMeeting: recruitment.hasRegularMeeting,
       activityLocationType: recruitment.activityLocationType,
       activityLocationText: recruitment.activityLocationText,
-      mainActivities: recruitment.mainActivities,
-      extraInfo: recruitment.extraInfo,
+      hasEligibility: recruitment.hasEligibility,
+      eligibilityText: recruitment.eligibilityText,
+      hasCapacityLimit: recruitment.hasCapacityLimit,
+      capacityLimitText: recruitment.capacityLimitText,
+      hasMembershipFee: recruitment.hasMembershipFee,
+      membershipFeeText: recruitment.membershipFeeText,
+      applicationUrl: recruitment.applicationUrl,
+      applicationProcess: recruitment.applicationProcess,
+      fullRecruitmentText: recruitment.fullRecruitmentText,
+      imageUrls: recruitment.imageUrls,
     }
+  }
+
+  private toRegularMeetingEntities(
+    regularMeetings: UpsertClubRecruitment['regularMeetings'],
+  ): Partial<RegularMeetingEntity>[] {
+    return regularMeetings.map((regularMeeting) => ({
+      dayOfWeek: regularMeeting.dayOfWeek,
+      startTime: regularMeeting.startTime,
+      endTime: regularMeeting.endTime,
+    }))
   }
 
   private async getManagedRecruitmentEntity(
@@ -180,11 +229,14 @@ export class ClubRecruitmentService {
   private async getRecruitmentEntity(
     clubUuid: string,
     recruitmentId: string,
+    repository: Repository<ClubRecruitmentEntity> = this.clubRecruitmentRepository,
   ): Promise<ClubRecruitmentEntity> {
-    const recruitment = await this.clubRecruitmentRepository.findOneBy({
-      id: recruitmentId,
-      clubId: clubUuid,
-      deletedAt: IsNull(),
+    const recruitment = await repository.findOne({
+      where: {
+        id: recruitmentId,
+        clubId: clubUuid,
+        deletedAt: IsNull(),
+      },
     })
 
     if (!recruitment) {
@@ -223,9 +275,12 @@ export class ClubRecruitmentService {
     }
   }
 
-  private async saveOrThrowConflict(entity: ClubRecruitmentEntity): Promise<ClubRecruitmentEntity> {
+  private async saveOrThrowConflict(
+    entity: ClubRecruitmentEntity,
+    repository: Repository<ClubRecruitmentEntity> = this.clubRecruitmentRepository,
+  ): Promise<ClubRecruitmentEntity> {
     try {
-      return await this.clubRecruitmentRepository.save(entity)
+      return await repository.save(entity)
     } catch (error) {
       if (this.isMonthlyRecruitmentConflict(error)) {
         throw new ConflictError('recruitment already exists for this month')

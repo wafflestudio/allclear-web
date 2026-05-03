@@ -6,7 +6,6 @@ export const AgreeTermsSchema = z
     termUuids: z.array(z.string().uuid()),
   })
   .openapi('AgreeTerms')
-
 export const TermsResponseSchema = z
   .object({
     data: z.array(TermsSchema),

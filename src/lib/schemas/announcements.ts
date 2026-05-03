@@ -6,7 +6,6 @@ export const DismissAnnouncementsSchema = z
     announcementUuids: z.array(z.string().uuid()),
   })
   .openapi('DismissAnnouncements')
-
 export const AnnouncementsResponseSchema = z
   .object({
     data: z.array(AnnouncementSchema),

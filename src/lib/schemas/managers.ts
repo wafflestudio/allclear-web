@@ -36,8 +36,10 @@ export const ManagerClubParamsSchema = z
 
 export const ClubManagerRegisterRequestSchema = z
   .object({
-    clubId: z.string().uuid().optional(),
-    clubName: z.string().nonempty().optional(),
+    clubId: z.string().uuid(),
+    name: z.string().trim().optional(),
+    phone: z.string().trim().optional(),
+    studentId: z.string().trim().optional(),
   })
   .openapi('ClubManagerRegisterRequest')
 

@@ -1,3 +1,7 @@
+/*
+- club 테이블에 신규 필드 추가
+- club 테이블의 affiliation_type은 기존의 college 필드로 추측해서 채워넣음
+*/
 ALTER TABLE club 
     ADD COLUMN affiliation_type character varying NOT NULL DEFAULT '',
     ADD COLUMN college_major_id integer;

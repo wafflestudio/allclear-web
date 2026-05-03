@@ -11,4 +11,13 @@ export class ClubManagerEntity extends TimeStampMixin {
 
   @Column({ type: 'uuid', name: 'service_user_id' })
   serviceUserId: string
+
+  @Column({ type: 'varchar', default: '', name: 'name' })
+  name: string
+
+  @Column({ type: 'varchar', default: '', name: 'phone' })
+  phone: string
+
+  @Column({ type: 'varchar', default: '', name: 'student_id' })
+  studentId: string
 }

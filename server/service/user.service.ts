@@ -110,7 +110,7 @@ export class UserService {
         id: updateProfileDto.collegeMajorId,
       })
       if (collegeMajor) {
-        college = collegeMajor.college
+        college = collegeMajor.college ?? ''
         major = collegeMajor.major ?? ''
       }
     }
