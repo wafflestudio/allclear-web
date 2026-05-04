@@ -16,6 +16,7 @@ import type {
   AdminClubManagerRequestStatusUpdate,
   AdminClubManagerRequestsQuery,
   AdminClubStatusUpdate,
+  AdminClubVerificationRequestStatusUpdate,
   AdminClubVerificationRequestsQuery,
 } from 'src/lib/schemas/admin'
 
@@ -460,6 +461,61 @@ export class AdminClubService {
         request_id: requestId,
         club_uuid: request.clubId,
         status: decision.status,
+        processed_at: processedAt,
+      }
+    })
+  }
+
+  async updateAdminClubVerificationRequestStatus(
+    requestId: number,
+    decision: AdminClubVerificationRequestStatusUpdate,
+  ): Promise<{
+    request_id: number
+    club_uuid: string
+    status: AdminClubVerificationRequestStatusUpdate['status']
+    is_official_verified: boolean
+    processed_at: string
+  }> {
+    return this.clubVerificationRequestRepository.manager.transaction(async (manager) => {
+      const verificationRequestRepository = manager.getRepository(ClubVerificationRequestEntity)
+      const clubRepository = manager.getRepository(ClubEntity)
+
+      const request = await verificationRequestRepository.findOneBy({ id: String(requestId) })
+      if (!request) {
+        throw new NotFoundError('verification request not found')
+      }
+
+      if (request.status !== PENDING_CLUB_STATUS) {
+        throw new ConflictError('verification request already processed')
+      }
+
+      const processedAt = new Date().toISOString()
+      const isApproved = decision.status === PUBLIC_CLUB_STATUS
+      const isRejected = decision.status === REJECTED_CLUB_STATUS
+
+      if (isApproved) {
+        await clubRepository.update(
+          { uuid: request.clubId },
+          {
+            isOfficialVerified: true,
+            verifiedAt: processedAt,
+          },
+        )
+      }
+
+      await verificationRequestRepository.update(
+        { id: request.id },
+        {
+          status: decision.status,
+          rejectReason: isRejected ? decision.reject_reason?.trim() ?? '' : '',
+        },
+      )
+
+      return {
+        request_id: requestId,
+        club_uuid: request.clubId,
+        status: decision.status,
+        is_official_verified: isApproved,
         processed_at: processedAt,
       }
     })

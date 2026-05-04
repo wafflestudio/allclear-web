@@ -290,3 +290,51 @@ export const AdminClubManagerRequestStatusUpdateResponseSchema = z
 export type AdminClubManagerRequestStatusUpdateResponse = z.infer<
   typeof AdminClubManagerRequestStatusUpdateResponseSchema
 >
+
+export const AdminClubVerificationRequestStatusParamsSchema = z
+  .object({
+    id: z.preprocess((value) => Number(value), z.number().int().positive()),
+  })
+  .openapi('AdminClubVerificationRequestStatusParams')
+
+export type AdminClubVerificationRequestStatusParams = z.infer<
+  typeof AdminClubVerificationRequestStatusParamsSchema
+>
+
+export const AdminClubVerificationRequestStatusUpdateSchema = z
+  .object({
+    status: z.enum(CLUB_DECISION_STATUSES),
+    reject_reason: z.string().trim().max(300).optional(),
+  })
+  .superRefine(({ status, reject_reason }, ctx) => {
+    if (status === REJECTED_CLUB_STATUS && !reject_reason?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['reject_reason'],
+        message: 'reject_reason is required when status is REJECTED',
+      })
+    }
+  })
+  .openapi('AdminClubVerificationRequestStatusUpdate')
+
+export type AdminClubVerificationRequestStatusUpdate = z.infer<
+  typeof AdminClubVerificationRequestStatusUpdateSchema
+>
+
+export const AdminClubVerificationRequestStatusUpdateResponseSchema = z
+  .object({
+    success: z.literal(true),
+    message: z.string(),
+    data: z.object({
+      request_id: z.number().int(),
+      club_uuid: z.string().uuid(),
+      status: z.enum(CLUB_DECISION_STATUSES),
+      is_official_verified: z.boolean(),
+      processed_at: z.string(),
+    }),
+  })
+  .openapi('AdminClubVerificationRequestStatusUpdateResponse')
+
+export type AdminClubVerificationRequestStatusUpdateResponse = z.infer<
+  typeof AdminClubVerificationRequestStatusUpdateResponseSchema
+>

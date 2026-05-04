@@ -62,6 +62,9 @@ import {
   AdminClubManagerRequestStatusUpdateSchema,
   AdminClubManagerRequestsQuerySchema,
   AdminClubManagerRequestsResponseSchema,
+  AdminClubVerificationRequestStatusParamsSchema,
+  AdminClubVerificationRequestStatusUpdateResponseSchema,
+  AdminClubVerificationRequestStatusUpdateSchema,
   AdminClubVerificationRequestsQuerySchema,
   AdminClubVerificationRequestsResponseSchema,
   AdminClubsQuerySchema,
@@ -419,6 +422,18 @@ const adminClubManagerRequestStatusUpdateResponseExample = {
     club_uuid: '123e4567-e89b-12d3-a456-426614174000',
     status: 'APPROVED',
     processed_at: '2026-04-29T16:00:00Z',
+  },
+}
+
+const adminClubVerificationRequestStatusUpdateResponseExample = {
+  success: true,
+  message: '공식 인증 요청 처리가 완료되었습니다.',
+  data: {
+    request_id: 5,
+    club_uuid: '123e4567-e89b-12d3-a456-426614174000',
+    status: 'APPROVED',
+    is_official_verified: true,
+    processed_at: '2026-04-29T18:00:00Z',
   },
 }
 
@@ -1717,6 +1732,59 @@ registry.registerPath({
         'application/json': {
           schema: AdminClubManagerRequestStatusUpdateResponseSchema,
           example: adminClubManagerRequestStatusUpdateResponseExample,
+        },
+      },
+    },
+    400: validationErrorResponse,
+    401: unauthorizedResponse,
+    403: forbiddenResponse,
+    404: notFoundResponse,
+    409: conflictResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/admin/clubs/verifications/{id}/status',
+  tags: ['Admin'],
+  summary: '운영진 전용 공식 인증 요청 승인 및 반려',
+  description:
+    '운영진이 특정 동아리의 공식 인증 요청 건을 승인 또는 반려합니다. 승인 시 해당 동아리의 is_official_verified가 true로 변경됩니다. 이미 처리된 요청은 다시 수정할 수 없습니다.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: AdminClubVerificationRequestStatusParamsSchema,
+    body: {
+      content: {
+        'application/json': {
+          schema: AdminClubVerificationRequestStatusUpdateSchema,
+          examples: {
+            approve: {
+              summary: '승인',
+              value: {
+                status: 'APPROVED',
+                reject_reason: '',
+              },
+            },
+            reject: {
+              summary: '반려',
+              value: {
+                status: 'REJECTED',
+                reject_reason: '공식 인증 기준을 충족하지 못했습니다.',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: '처리 성공',
+      content: {
+        'application/json': {
+          schema: AdminClubVerificationRequestStatusUpdateResponseSchema,
+          example: adminClubVerificationRequestStatusUpdateResponseExample,
         },
       },
     },
