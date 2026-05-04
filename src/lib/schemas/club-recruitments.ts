@@ -116,7 +116,7 @@ export const CreateRecruitmentResponseSchema = z
     success: z.boolean(),
     message: z.string(),
     data: z.object({
-      recruitment_id: z.string(),
+      recruitment_id: z.number().int(),
       club_uuid: z.string().uuid(),
       year_month: z.string().regex(/^\d{4}-\d{2}$/),
       deadline: z.string(),
@@ -131,7 +131,7 @@ export const UpdateRecruitmentResponseSchema = z
     success: z.boolean(),
     message: z.string(),
     data: z.object({
-      recruitment_id: z.string(),
+      recruitment_id: z.number().int(),
       club_uuid: z.string().uuid(),
       year_month: z.string().regex(/^\d{4}-\d{2}$/),
       deadline: z.string(),
