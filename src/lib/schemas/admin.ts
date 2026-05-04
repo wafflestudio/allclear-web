@@ -32,6 +32,42 @@ export const PendingClubsResponseSchema = z
 
 export type PendingClubsResponse = z.infer<typeof PendingClubsResponseSchema>
 
+const PendingClubDetailClubSchema = z
+  .object({
+    uuid: z.string().uuid(),
+    name: z.string(),
+    type: z.string(),
+    category: z.string(),
+    affiliation: z.string(),
+    college_major_id: z.number().int().nullable(),
+    short_description: z.string(),
+    image_uri: z.string(),
+    recruit_type: z.string().nullable(),
+    min_activity_period: z.number().int(),
+    has_dongbang: z.boolean(),
+    dongbang_location: z.string(),
+    sns: z.string(),
+    introduction: z.string().nullable(),
+    created_at: z.string(),
+  })
+  .openapi('PendingClubDetailClub')
+
+const PendingClubDetailManagerSchema = PendingClubManagerSchema.extend({
+  service_user_id: z.string(),
+}).openapi('PendingClubDetailManager')
+
+export const PendingClubDetailResponseSchema = z
+  .object({
+    success: z.literal(true),
+    data: z.object({
+      club_data: PendingClubDetailClubSchema,
+      manager_data: PendingClubDetailManagerSchema,
+    }),
+  })
+  .openapi('PendingClubDetailResponse')
+
+export type PendingClubDetailResponse = z.infer<typeof PendingClubDetailResponseSchema>
+
 export const PendingClubDecisionSchema = z
   .object({
     status: z.enum(CLUB_DECISION_STATUSES),

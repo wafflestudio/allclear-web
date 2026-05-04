@@ -56,6 +56,7 @@ import {
 import {
   PendingClubDecisionResponseSchema,
   PendingClubDecisionSchema,
+  PendingClubDetailResponseSchema,
   PendingClubsResponseSchema,
 } from 'src/lib/schemas/admin'
 import {
@@ -1374,6 +1375,30 @@ registry.registerPath({
       },
     },
     403: forbiddenResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/admin/clubs/pending/{uuid}',
+  tags: ['Admin'],
+  summary: '승인 대기 중인 동아리 상세 조회',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: ClubUuidParamsSchema,
+  },
+  responses: {
+    200: {
+      description: '조회 성공',
+      content: {
+        'application/json': {
+          schema: PendingClubDetailResponseSchema,
+        },
+      },
+    },
+    403: forbiddenResponse,
+    404: notFoundResponse,
     500: internalServerErrorResponse,
   },
 })

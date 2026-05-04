@@ -24,6 +24,32 @@ export type PendingClubItem = {
   }
 }
 
+export type PendingClubDetail = {
+  club_data: {
+    uuid: string
+    name: string
+    type: string
+    category: string
+    affiliation: string
+    college_major_id: number | null
+    short_description: string
+    image_uri: string
+    recruit_type: string | null
+    min_activity_period: number
+    has_dongbang: boolean
+    dongbang_location: string
+    sns: string
+    introduction: string | null
+    created_at: string
+  }
+  manager_data: {
+    name: string
+    phone: string
+    student_id: string
+    service_user_id: string
+  }
+}
+
 @Service
 export class AdminClubService {
   @InjectRepository(ClubEntity)
@@ -64,6 +90,51 @@ export class AdminClubService {
         },
       }
     })
+  }
+
+  async getPendingClubDetail(clubUuid: string): Promise<PendingClubDetail> {
+    const club = await this.clubRepository.findOneBy({
+      uuid: clubUuid,
+      status: PENDING_CLUB_STATUS,
+      deletedAt: IsNull(),
+    })
+
+    if (!club) {
+      throw new NotFoundError('pending club not found')
+    }
+
+    const manager = await this.clubManagerRepository.findOneBy({
+      clubId: clubUuid,
+    })
+
+    return {
+      club_data: {
+        uuid: club.uuid,
+        name: club.name,
+        type: club.type,
+        category: club.category,
+        affiliation:
+          club.affiliationType === '소속동아리'
+            ? club.collegeMajor?.major ?? club.collegeMajor?.college ?? ''
+            : club.affiliationType,
+        college_major_id: club.collegeMajorId,
+        short_description: club.shortDescription,
+        image_uri: club.imageUri,
+        recruit_type: club.recruitType,
+        min_activity_period: club.minActivityPeriod,
+        has_dongbang: club.hasDongbang,
+        dongbang_location: club.dongbangLocation,
+        sns: club.sns,
+        introduction: club.introduction,
+        created_at: club.createdAt,
+      },
+      manager_data: {
+        name: manager?.name ?? '',
+        phone: manager?.phone ?? '',
+        student_id: manager?.studentId ?? '',
+        service_user_id: manager?.serviceUserId ?? '',
+      },
+    }
   }
 
   async decidePendingClub(
