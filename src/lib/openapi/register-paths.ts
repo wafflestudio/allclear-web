@@ -57,6 +57,9 @@ import {
   AdminClubDetailResponseSchema,
   AdminClubHistoriesQuerySchema,
   AdminClubHistoriesResponseSchema,
+  AdminClubManagerRequestStatusParamsSchema,
+  AdminClubManagerRequestStatusUpdateResponseSchema,
+  AdminClubManagerRequestStatusUpdateSchema,
   AdminClubManagerRequestsQuerySchema,
   AdminClubManagerRequestsResponseSchema,
   AdminClubVerificationRequestsQuerySchema,
@@ -405,6 +408,17 @@ const adminClubVerificationRequestsResponseExample = {
         created_at: '2026-04-25T11:20:00Z',
       },
     ],
+  },
+}
+
+const adminClubManagerRequestStatusUpdateResponseExample = {
+  success: true,
+  message: '매핑 신청 처리가 완료되었습니다.',
+  data: {
+    request_id: 12,
+    club_uuid: '123e4567-e89b-12d3-a456-426614174000',
+    status: 'APPROVED',
+    processed_at: '2026-04-29T16:00:00Z',
   },
 }
 
@@ -1658,6 +1672,59 @@ registry.registerPath({
     400: validationErrorResponse,
     401: unauthorizedResponse,
     403: forbiddenResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/admin/clubs/manager-requests/{id}/status',
+  tags: ['Admin'],
+  summary: '운영진 전용 매핑 신청 승인 및 반려',
+  description:
+    '운영진이 특정 동아리 관리 권한 신청 건을 승인 또는 반려합니다. 승인 시 신청 유저가 club_manager에 등록됩니다. 이미 처리된 요청은 다시 수정할 수 없습니다.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: AdminClubManagerRequestStatusParamsSchema,
+    body: {
+      content: {
+        'application/json': {
+          schema: AdminClubManagerRequestStatusUpdateSchema,
+          examples: {
+            approve: {
+              summary: '승인',
+              value: {
+                status: 'APPROVED',
+                reject_reason: '',
+              },
+            },
+            reject: {
+              summary: '반려',
+              value: {
+                status: 'REJECTED',
+                reject_reason: '관리자 증빙 정보가 부족합니다.',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: '처리 성공',
+      content: {
+        'application/json': {
+          schema: AdminClubManagerRequestStatusUpdateResponseSchema,
+          example: adminClubManagerRequestStatusUpdateResponseExample,
+        },
+      },
+    },
+    400: validationErrorResponse,
+    401: unauthorizedResponse,
+    403: forbiddenResponse,
+    404: notFoundResponse,
+    409: conflictResponse,
     500: internalServerErrorResponse,
   },
 })

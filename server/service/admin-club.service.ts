@@ -6,12 +6,14 @@ import { ClubManagerRegisterRequestEntity } from '../infra/database/entities/clu
 import { ClubVerificationRequestEntity } from '../infra/database/entities/club-verification-request.entity'
 import {
   ClubStatus,
+  PENDING_CLUB_STATUS,
   PUBLIC_CLUB_STATUS,
   REJECTED_CLUB_STATUS,
 } from 'src/common/constants/club-status'
-import { NotFoundError } from 'server/domain/error'
+import { ConflictError, NotFoundError } from 'server/domain/error'
 import type {
   AdminClubHistoriesQuery,
+  AdminClubManagerRequestStatusUpdate,
   AdminClubManagerRequestsQuery,
   AdminClubStatusUpdate,
   AdminClubVerificationRequestsQuery,
@@ -403,5 +405,63 @@ export class AdminClubService {
       status: request.status,
       created_at: request.created_at,
     }))
+  }
+
+  async updateAdminClubManagerRequestStatus(
+    requestId: number,
+    decision: AdminClubManagerRequestStatusUpdate,
+  ): Promise<{
+    request_id: number
+    club_uuid: string
+    status: AdminClubManagerRequestStatusUpdate['status']
+    processed_at: string
+  }> {
+    return this.clubManagerRegisterRequestRepository.manager.transaction(async (manager) => {
+      const managerRequestRepository = manager.getRepository(ClubManagerRegisterRequestEntity)
+      const clubManagerRepository = manager.getRepository(ClubManagerEntity)
+
+      const request = await managerRequestRepository.findOneBy({ id: String(requestId) })
+      if (!request) {
+        throw new NotFoundError('manager request not found')
+      }
+
+      if (request.status !== PENDING_CLUB_STATUS) {
+        throw new ConflictError('manager request already processed')
+      }
+
+      const processedAt = new Date().toISOString()
+      const isApproved = decision.status === PUBLIC_CLUB_STATUS
+      const isRejected = decision.status === REJECTED_CLUB_STATUS
+
+      if (isApproved) {
+        const existingManager = await clubManagerRepository.findOneBy({ clubId: request.clubId })
+        if (existingManager) {
+          throw new ConflictError('club already has a manager')
+        }
+
+        await clubManagerRepository.insert({
+          clubId: request.clubId,
+          serviceUserId: request.serviceUserId,
+          name: request.name,
+          phone: request.phone,
+          studentId: request.studentId,
+        })
+      }
+
+      await managerRequestRepository.update(
+        { id: request.id },
+        {
+          status: decision.status,
+          rejectReason: isRejected ? decision.reject_reason?.trim() ?? '' : '',
+        },
+      )
+
+      return {
+        request_id: requestId,
+        club_uuid: request.clubId,
+        status: decision.status,
+        processed_at: processedAt,
+      }
+    })
   }
 }

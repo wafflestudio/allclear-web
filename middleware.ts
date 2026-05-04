@@ -67,6 +67,7 @@ export const config = {
     '/api/v1/admin/clubs',
     '/api/v1/admin/clubs/histories',
     '/api/v1/admin/clubs/manager-requests',
+    '/api/v1/admin/clubs/manager-requests/:id/status',
     '/api/v1/admin/clubs/verifications',
     '/api/v1/admin/clubs/:uuid?',
     '/api/v1/admin/clubs/:uuid?/status',

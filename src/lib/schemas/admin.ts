@@ -1,5 +1,9 @@
 import { z } from 'src/lib/schemas/zod'
-import { CLUB_STATUSES, REJECTED_CLUB_STATUS } from 'src/common/constants/club-status'
+import {
+  CLUB_DECISION_STATUSES,
+  CLUB_STATUSES,
+  REJECTED_CLUB_STATUS,
+} from 'src/common/constants/club-status'
 
 const AdminClubManagerSchema = z.object({
   name: z.string(),
@@ -238,4 +242,51 @@ export const AdminClubVerificationRequestsResponseSchema = z
 
 export type AdminClubVerificationRequestsResponse = z.infer<
   typeof AdminClubVerificationRequestsResponseSchema
+>
+
+export const AdminClubManagerRequestStatusParamsSchema = z
+  .object({
+    id: z.preprocess((value) => Number(value), z.number().int().positive()),
+  })
+  .openapi('AdminClubManagerRequestStatusParams')
+
+export type AdminClubManagerRequestStatusParams = z.infer<
+  typeof AdminClubManagerRequestStatusParamsSchema
+>
+
+export const AdminClubManagerRequestStatusUpdateSchema = z
+  .object({
+    status: z.enum(CLUB_DECISION_STATUSES),
+    reject_reason: z.string().trim().max(300).optional(),
+  })
+  .superRefine(({ status, reject_reason }, ctx) => {
+    if (status === REJECTED_CLUB_STATUS && !reject_reason?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['reject_reason'],
+        message: 'reject_reason is required when status is REJECTED',
+      })
+    }
+  })
+  .openapi('AdminClubManagerRequestStatusUpdate')
+
+export type AdminClubManagerRequestStatusUpdate = z.infer<
+  typeof AdminClubManagerRequestStatusUpdateSchema
+>
+
+export const AdminClubManagerRequestStatusUpdateResponseSchema = z
+  .object({
+    success: z.literal(true),
+    message: z.string(),
+    data: z.object({
+      request_id: z.number().int(),
+      club_uuid: z.string().uuid(),
+      status: z.enum(CLUB_DECISION_STATUSES),
+      processed_at: z.string(),
+    }),
+  })
+  .openapi('AdminClubManagerRequestStatusUpdateResponse')
+
+export type AdminClubManagerRequestStatusUpdateResponse = z.infer<
+  typeof AdminClubManagerRequestStatusUpdateResponseSchema
 >
