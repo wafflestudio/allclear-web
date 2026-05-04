@@ -54,10 +54,11 @@ import {
   CreateVerificationRequestResponseSchema,
 } from 'src/lib/schemas/managers'
 import {
-  PendingClubDecisionResponseSchema,
-  PendingClubDecisionSchema,
-  PendingClubDetailResponseSchema,
-  PendingClubsResponseSchema,
+  AdminClubDetailResponseSchema,
+  AdminClubsQuerySchema,
+  AdminClubsResponseSchema,
+  AdminClubStatusUpdateResponseSchema,
+  AdminClubStatusUpdateSchema,
 } from 'src/lib/schemas/admin'
 import {
   CollegeMajorsQuerySchema,
@@ -1361,16 +1362,19 @@ registry.registerPath({
 
 registry.registerPath({
   method: 'get',
-  path: '/api/v1/admin/clubs/pending',
+  path: '/api/v1/admin/clubs',
   tags: ['Admin'],
-  summary: '승인 대기 중인 동아리 목록 조회',
+  summary: '운영진 전용 동아리 목록 조회',
   security: [{ bearerAuth: [] }],
+  request: {
+    query: AdminClubsQuerySchema,
+  },
   responses: {
     200: {
       description: '조회 성공',
       content: {
         'application/json': {
-          schema: PendingClubsResponseSchema,
+          schema: AdminClubsResponseSchema,
         },
       },
     },
@@ -1381,9 +1385,9 @@ registry.registerPath({
 
 registry.registerPath({
   method: 'get',
-  path: '/api/v1/admin/clubs/pending/{uuid}',
+  path: '/api/v1/admin/clubs/{uuid}',
   tags: ['Admin'],
-  summary: '승인 대기 중인 동아리 상세 조회',
+  summary: '운영진 전용 동아리 상세 조회',
   security: [{ bearerAuth: [] }],
   request: {
     params: ClubUuidParamsSchema,
@@ -1393,7 +1397,7 @@ registry.registerPath({
       description: '조회 성공',
       content: {
         'application/json': {
-          schema: PendingClubDetailResponseSchema,
+          schema: AdminClubDetailResponseSchema,
         },
       },
     },
@@ -1405,16 +1409,16 @@ registry.registerPath({
 
 registry.registerPath({
   method: 'patch',
-  path: '/api/v1/admin/clubs/pending/{uuid}/status',
+  path: '/api/v1/admin/clubs/{uuid}/status',
   tags: ['Admin'],
-  summary: '신규 동아리 등록 승인 및 반려',
+  summary: '운영진 전용 동아리 상태 변경',
   security: [{ bearerAuth: [] }],
   request: {
     params: ClubUuidParamsSchema,
     body: {
       content: {
         'application/json': {
-          schema: PendingClubDecisionSchema,
+          schema: AdminClubStatusUpdateSchema,
         },
       },
     },
@@ -1424,7 +1428,7 @@ registry.registerPath({
       description: '처리 성공',
       content: {
         'application/json': {
-          schema: PendingClubDecisionResponseSchema,
+          schema: AdminClubStatusUpdateResponseSchema,
         },
       },
     },

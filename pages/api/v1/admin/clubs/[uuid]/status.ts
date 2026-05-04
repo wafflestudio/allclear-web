@@ -5,11 +5,11 @@ import { AdminClubService } from 'server/service/admin-club.service'
 import { UserService } from 'server/service/user.service'
 import { BadRequestError, ForbiddenError, NotFoundError } from 'server/domain/error'
 import { ClubUuidParamsSchema } from 'src/lib/schemas/clubs'
-import { PendingClubDecisionResponse, PendingClubDecisionSchema } from 'src/lib/schemas/admin'
+import { AdminClubStatusUpdateResponse, AdminClubStatusUpdateSchema } from 'src/lib/schemas/admin'
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<PendingClubDecisionResponse | string | ZodIssue[]>,
+  res: NextApiResponse<AdminClubStatusUpdateResponse | string | ZodIssue[]>,
 ) {
   try {
     const userService = Provider.getService(UserService)
@@ -18,12 +18,12 @@ export default async function handler(
 
     if (req.method === 'PATCH') {
       const { uuid: clubUuid } = ClubUuidParamsSchema.parse(req.query)
-      const body = PendingClubDecisionSchema.parse(req.body)
-      const result = await adminClubService.decidePendingClub(clubUuid, body)
+      const body = AdminClubStatusUpdateSchema.parse(req.body)
+      const result = await adminClubService.updateAdminClubStatus(clubUuid, body)
 
       return res.status(200).json({
         success: true,
-        message: '처리가 완료되었습니다.',
+        message: '상태 변경이 완료되었습니다.',
         data: result,
       })
     }
@@ -32,7 +32,7 @@ export default async function handler(
       return res.status(403).send('Forbidden')
     }
     if (err instanceof NotFoundError) {
-      return res.status(404).send('pending club not found')
+      return res.status(404).send('club not found')
     }
     if (err instanceof BadRequestError) {
       return res.status(400).send(err.message)
@@ -40,7 +40,7 @@ export default async function handler(
     if (err instanceof z.ZodError) {
       return res.status(400).json(err.errors)
     }
-    console.error('decidePendingClub error: ', err)
+    console.error('updateAdminClubStatus error: ', err)
     return res.status(500).send('Internal Server Error')
   }
 

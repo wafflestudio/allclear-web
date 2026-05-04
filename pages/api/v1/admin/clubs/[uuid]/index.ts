@@ -1,13 +1,15 @@
 import { NextApiRequest, NextApiResponse } from 'next'
+import { ZodIssue, z } from 'zod'
 import { Provider } from 'server/provider'
 import { AdminClubService } from 'server/service/admin-club.service'
 import { UserService } from 'server/service/user.service'
-import { ForbiddenError } from 'server/domain/error'
-import { type PendingClubsResponse } from 'src/lib/schemas/admin'
+import { ForbiddenError, NotFoundError } from 'server/domain/error'
+import { ClubUuidParamsSchema } from 'src/lib/schemas/clubs'
+import { AdminClubDetailResponse } from 'src/lib/schemas/admin'
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<PendingClubsResponse | string>,
+  res: NextApiResponse<AdminClubDetailResponse | string | ZodIssue[]>,
 ) {
   try {
     const userService = Provider.getService(UserService)
@@ -15,21 +17,25 @@ export default async function handler(
     await userService.assertAdminRole(req.headers.user as string)
 
     if (req.method === 'GET') {
-      const clubs = await adminClubService.getPendingClubs()
+      const { uuid: clubUuid } = ClubUuidParamsSchema.parse(req.query)
+      const detail = await adminClubService.getAdminClubDetail(clubUuid)
+
       return res.status(200).json({
         success: true,
-        message: '승인 대기 중인 동아리 목록 조회가 완료되었습니다.',
-        data: {
-          total_count: clubs.length,
-          clubs,
-        },
+        data: detail,
       })
     }
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return res.status(403).send('Forbidden')
     }
-    console.error('getPendingClubs error: ', err)
+    if (err instanceof NotFoundError) {
+      return res.status(404).send('club not found')
+    }
+    if (err instanceof z.ZodError) {
+      return res.status(400).json(err.errors)
+    }
+    console.error('getAdminClubDetail error: ', err)
     return res.status(500).send('Internal Server Error')
   }
 

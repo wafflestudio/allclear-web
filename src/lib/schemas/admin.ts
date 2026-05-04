@@ -1,40 +1,50 @@
 import { z } from 'src/lib/schemas/zod'
-import { CLUB_DECISION_STATUSES, REJECTED_CLUB_STATUS } from 'src/common/constants/club-status'
+import { CLUB_STATUSES, REJECTED_CLUB_STATUS } from 'src/common/constants/club-status'
 
-const PendingClubManagerSchema = z.object({
+const AdminClubManagerSchema = z.object({
   name: z.string(),
   phone: z.string(),
   student_id: z.string(),
 })
 
-const PendingClubSchema = z
+export const AdminClubsQuerySchema = z
+  .object({
+    status: z.enum(CLUB_STATUSES).optional(),
+  })
+  .openapi('AdminClubsQuery')
+
+export type AdminClubsQuery = z.infer<typeof AdminClubsQuerySchema>
+
+const AdminClubSchema = z
   .object({
     uuid: z.string().uuid(),
     name: z.string(),
+    status: z.enum(CLUB_STATUSES),
     category: z.string(),
     affiliation: z.string(),
     short_description: z.string(),
     created_at: z.string(),
-    manager: PendingClubManagerSchema,
+    manager: AdminClubManagerSchema,
   })
-  .openapi('PendingClub')
+  .openapi('AdminClub')
 
-export const PendingClubsResponseSchema = z
+export const AdminClubsResponseSchema = z
   .object({
     success: z.literal(true),
     message: z.string(),
     data: z.object({
       total_count: z.number().int(),
-      clubs: z.array(PendingClubSchema),
+      clubs: z.array(AdminClubSchema),
     }),
   })
-  .openapi('PendingClubsResponse')
+  .openapi('AdminClubsResponse')
 
-export type PendingClubsResponse = z.infer<typeof PendingClubsResponseSchema>
+export type AdminClubsResponse = z.infer<typeof AdminClubsResponseSchema>
 
-const PendingClubDetailClubSchema = z
+const AdminClubDetailClubSchema = z
   .object({
     uuid: z.string().uuid(),
+    status: z.enum(CLUB_STATUSES),
     name: z.string(),
     type: z.string(),
     category: z.string(),
@@ -50,27 +60,27 @@ const PendingClubDetailClubSchema = z
     introduction: z.string().nullable(),
     created_at: z.string(),
   })
-  .openapi('PendingClubDetailClub')
+  .openapi('AdminClubDetailClub')
 
-const PendingClubDetailManagerSchema = PendingClubManagerSchema.extend({
+const AdminClubDetailManagerSchema = AdminClubManagerSchema.extend({
   service_user_id: z.string(),
-}).openapi('PendingClubDetailManager')
+}).openapi('AdminClubDetailManager')
 
-export const PendingClubDetailResponseSchema = z
+export const AdminClubDetailResponseSchema = z
   .object({
     success: z.literal(true),
     data: z.object({
-      club_data: PendingClubDetailClubSchema,
-      manager_data: PendingClubDetailManagerSchema,
+      club_data: AdminClubDetailClubSchema,
+      manager_data: AdminClubDetailManagerSchema,
     }),
   })
-  .openapi('PendingClubDetailResponse')
+  .openapi('AdminClubDetailResponse')
 
-export type PendingClubDetailResponse = z.infer<typeof PendingClubDetailResponseSchema>
+export type AdminClubDetailResponse = z.infer<typeof AdminClubDetailResponseSchema>
 
-export const PendingClubDecisionSchema = z
+export const AdminClubStatusUpdateSchema = z
   .object({
-    status: z.enum(CLUB_DECISION_STATUSES),
+    status: z.enum(CLUB_STATUSES),
     reject_reason: z.string().trim().max(300).optional(),
     is_official_verified: z.boolean(),
   })
@@ -83,20 +93,20 @@ export const PendingClubDecisionSchema = z
       })
     }
   })
-  .openapi('PendingClubDecision')
+  .openapi('AdminClubStatusUpdate')
 
-export type PendingClubDecision = z.infer<typeof PendingClubDecisionSchema>
+export type AdminClubStatusUpdate = z.infer<typeof AdminClubStatusUpdateSchema>
 
-export const PendingClubDecisionResponseSchema = z
+export const AdminClubStatusUpdateResponseSchema = z
   .object({
     success: z.literal(true),
     message: z.string(),
     data: z.object({
       club_uuid: z.string().uuid(),
-      status: z.enum(CLUB_DECISION_STATUSES),
+      status: z.enum(CLUB_STATUSES),
       processed_at: z.string(),
     }),
   })
-  .openapi('PendingClubDecisionResponse')
+  .openapi('AdminClubStatusUpdateResponse')
 
-export type PendingClubDecisionResponse = z.infer<typeof PendingClubDecisionResponseSchema>
+export type AdminClubStatusUpdateResponse = z.infer<typeof AdminClubStatusUpdateResponseSchema>

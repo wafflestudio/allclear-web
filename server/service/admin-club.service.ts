@@ -1,18 +1,19 @@
-import { In, IsNull, Repository } from 'typeorm'
+import { FindOptionsWhere, In, IsNull, Repository } from 'typeorm'
 import { InjectRepository, Service } from '../provider'
 import { ClubEntity } from '../infra/database/entities'
 import { ClubManagerEntity } from '../infra/database/entities/club-manager.entity'
 import {
-  PENDING_CLUB_STATUS,
+  ClubStatus,
   PUBLIC_CLUB_STATUS,
   REJECTED_CLUB_STATUS,
 } from 'src/common/constants/club-status'
 import { NotFoundError } from 'server/domain/error'
-import type { PendingClubDecision } from 'src/lib/schemas/admin'
+import type { AdminClubStatusUpdate } from 'src/lib/schemas/admin'
 
-export type PendingClubItem = {
+export type AdminClubItem = {
   uuid: string
   name: string
+  status: ClubStatus
   category: string
   affiliation: string
   short_description: string
@@ -24,9 +25,10 @@ export type PendingClubItem = {
   }
 }
 
-export type PendingClubDetail = {
+export type AdminClubDetail = {
   club_data: {
     uuid: string
+    status: ClubStatus
     name: string
     type: string
     category: string
@@ -58,9 +60,16 @@ export class AdminClubService {
   @InjectRepository(ClubManagerEntity)
   private readonly clubManagerRepository: Repository<ClubManagerEntity>
 
-  async getPendingClubs(): Promise<PendingClubItem[]> {
+  async getAdminClubs(status?: ClubStatus): Promise<AdminClubItem[]> {
+    const where: FindOptionsWhere<ClubEntity> = {
+      deletedAt: IsNull(),
+    }
+    if (status) {
+      where.status = status
+    }
+
     const clubs = await this.clubRepository.find({
-      where: { status: PENDING_CLUB_STATUS },
+      where,
       order: { createdAt: 'ASC' },
     })
 
@@ -76,6 +85,7 @@ export class AdminClubService {
       return {
         uuid: club.uuid,
         name: club.name,
+        status: club.status,
         category: club.category,
         affiliation:
           club.affiliationType === '소속동아리'
@@ -92,15 +102,14 @@ export class AdminClubService {
     })
   }
 
-  async getPendingClubDetail(clubUuid: string): Promise<PendingClubDetail> {
+  async getAdminClubDetail(clubUuid: string): Promise<AdminClubDetail> {
     const club = await this.clubRepository.findOneBy({
       uuid: clubUuid,
-      status: PENDING_CLUB_STATUS,
       deletedAt: IsNull(),
     })
 
     if (!club) {
-      throw new NotFoundError('pending club not found')
+      throw new NotFoundError('club not found')
     }
 
     const manager = await this.clubManagerRepository.findOneBy({
@@ -110,6 +119,7 @@ export class AdminClubService {
     return {
       club_data: {
         uuid: club.uuid,
+        status: club.status,
         name: club.name,
         type: club.type,
         category: club.category,
@@ -137,18 +147,17 @@ export class AdminClubService {
     }
   }
 
-  async decidePendingClub(
+  async updateAdminClubStatus(
     clubUuid: string,
-    decision: PendingClubDecision,
-  ): Promise<{ club_uuid: string; status: PendingClubDecision['status']; processed_at: string }> {
+    decision: AdminClubStatusUpdate,
+  ): Promise<{ club_uuid: string; status: AdminClubStatusUpdate['status']; processed_at: string }> {
     const club = await this.clubRepository.findOneBy({
       uuid: clubUuid,
-      status: PENDING_CLUB_STATUS,
       deletedAt: IsNull(),
     })
 
     if (!club) {
-      throw new NotFoundError('pending club not found')
+      throw new NotFoundError('club not found')
     }
 
     const processedAt = new Date().toISOString()
@@ -158,7 +167,6 @@ export class AdminClubService {
     await this.clubRepository.update(
       {
         uuid: clubUuid,
-        status: PENDING_CLUB_STATUS,
         deletedAt: IsNull(),
       },
       {
