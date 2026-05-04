@@ -64,5 +64,6 @@ export const config = {
     '/api/v1/managers/me/clubs/:uuid?/images',
     '/api/v1/managers/me/clubs/:uuid?/verifications',
     '/api/v1/managers/me/recruitments/:recruitmentId?',
+    '/api/v1/admin/clubs/pending',
   ],
 }

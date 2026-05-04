@@ -54,6 +54,7 @@ import {
   ManagerClubParamsSchema,
   CreateVerificationRequestResponseSchema,
 } from 'src/lib/schemas/managers'
+import { PendingClubsResponseSchema } from 'src/lib/schemas/admin'
 import {
   CollegeMajorsQuerySchema,
   CollegeMajorsResponseSchema,
@@ -1380,6 +1381,26 @@ registry.registerPath({
     },
     400: validationErrorResponse,
     404: notFoundResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/admin/clubs/pending',
+  tags: ['Admin'],
+  summary: '승인 대기 중인 동아리 목록 조회',
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      description: '조회 성공',
+      content: {
+        'application/json': {
+          schema: PendingClubsResponseSchema,
+        },
+      },
+    },
+    403: forbiddenResponse,
     500: internalServerErrorResponse,
   },
 })
