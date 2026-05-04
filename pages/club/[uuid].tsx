@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { useRouter } from 'next/router'
 
-const appstore = 'https://apps.apple.com/kr/app/%EC%98%AC%ED%81%B4/id6461214029'
+const pullbackURL = 'https://all-clear.cc'
 
 const ClubDeepLink = () => {
   const router = useRouter()
@@ -15,7 +15,7 @@ const ClubDeepLink = () => {
 
     // 앱이 없는 경우 App Store로 폴백
     setTimeout(() => {
-      window.location.href = appstore
+      window.location.href = pullbackURL
     }, 2000)
   }, [router.isReady, uuid])
 
