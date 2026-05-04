@@ -1,6 +1,6 @@
 import { FindOptionsWhere, In, IsNull, Repository } from 'typeorm'
 import { InjectRepository, Service } from '../provider'
-import { ClubEntity } from '../infra/database/entities'
+import { ClubEntity, ClubHistoryEntity, ServiceUserEntity, UserEntity } from '../infra/database/entities'
 import { ClubManagerEntity } from '../infra/database/entities/club-manager.entity'
 import {
   ClubStatus,
@@ -8,7 +8,7 @@ import {
   REJECTED_CLUB_STATUS,
 } from 'src/common/constants/club-status'
 import { NotFoundError } from 'server/domain/error'
-import type { AdminClubStatusUpdate } from 'src/lib/schemas/admin'
+import type { AdminClubHistoriesQuery, AdminClubStatusUpdate } from 'src/lib/schemas/admin'
 
 export type AdminClubItem = {
   uuid: string
@@ -52,6 +52,20 @@ export type AdminClubDetail = {
   }
 }
 
+export type AdminClubHistoryItem = {
+  id: number
+  club_uuid: string
+  club_name: string
+  updated_by: {
+    service_user_id: string
+    name: string
+  }
+  changed_fields: string[]
+  before_data: Record<string, unknown>
+  after_data: Record<string, unknown>
+  created_at: string
+}
+
 @Service
 export class AdminClubService {
   @InjectRepository(ClubEntity)
@@ -59,6 +73,9 @@ export class AdminClubService {
 
   @InjectRepository(ClubManagerEntity)
   private readonly clubManagerRepository: Repository<ClubManagerEntity>
+
+  @InjectRepository(ClubHistoryEntity)
+  private readonly clubHistoryRepository: Repository<ClubHistoryEntity>
 
   async getAdminClubs(status?: ClubStatus): Promise<AdminClubItem[]> {
     const where: FindOptionsWhere<ClubEntity> = {
@@ -182,6 +199,84 @@ export class AdminClubService {
       club_uuid: clubUuid,
       status: decision.status,
       processed_at: processedAt,
+    }
+  }
+
+  async getAdminClubHistories({
+    club_uuid: clubUuid,
+    query,
+    offset,
+    limit,
+  }: AdminClubHistoriesQuery): Promise<{ total_count: number; histories: AdminClubHistoryItem[] }> {
+    const trimmedQuery = query?.trim()
+    const baseQuery = this.clubHistoryRepository
+      .createQueryBuilder('history')
+      .leftJoin(ClubEntity, 'club', 'club.uuid = history.club_id')
+      .leftJoin(
+        ClubManagerEntity,
+        'manager',
+        'manager.club_id = history.club_id AND manager.service_user_id = history.service_user_id',
+      )
+      .leftJoin(ServiceUserEntity, 'service_user', 'service_user.id = history.service_user_id')
+      .leftJoin(UserEntity, 'app_user', 'app_user.id = service_user.user_id')
+
+    if (clubUuid) {
+      baseQuery.andWhere('history.club_id = :clubUuid', { clubUuid })
+    }
+
+    if (trimmedQuery) {
+      baseQuery.andWhere(
+        '(club.name ILIKE :query OR manager.name ILIKE :query OR app_user.name ILIKE :query)',
+        {
+          query: `%${trimmedQuery}%`,
+        },
+      )
+    }
+
+    const totalCount = await baseQuery.getCount()
+    const histories = await baseQuery
+      .clone()
+      .select([
+        'history.id AS id',
+        'history.club_id AS club_uuid',
+        "COALESCE(club.name, '') AS club_name",
+        'history.service_user_id AS service_user_id',
+        "COALESCE(NULLIF(manager.name, ''), NULLIF(app_user.name, ''), '') AS updated_by_name",
+        'history.changed_fields AS changed_fields',
+        'history.before_data AS before_data',
+        'history.after_data AS after_data',
+        'history.created_at AS created_at',
+      ])
+      .orderBy('history.created_at', 'DESC')
+      .offset(offset)
+      .limit(limit)
+      .getRawMany<{
+        id: string
+        club_uuid: string
+        club_name: string
+        service_user_id: string
+        updated_by_name: string
+        changed_fields: string[]
+        before_data: Record<string, unknown>
+        after_data: Record<string, unknown>
+        created_at: string
+      }>()
+
+    return {
+      total_count: totalCount,
+      histories: histories.map((history) => ({
+        id: Number(history.id),
+        club_uuid: history.club_uuid,
+        club_name: history.club_name,
+        updated_by: {
+          service_user_id: history.service_user_id,
+          name: history.updated_by_name,
+        },
+        changed_fields: history.changed_fields,
+        before_data: history.before_data,
+        after_data: history.after_data,
+        created_at: history.created_at,
+      })),
     }
   }
 }

@@ -110,3 +110,57 @@ export const AdminClubStatusUpdateResponseSchema = z
   .openapi('AdminClubStatusUpdateResponse')
 
 export type AdminClubStatusUpdateResponse = z.infer<typeof AdminClubStatusUpdateResponseSchema>
+
+export const AdminClubHistoriesQuerySchema = z
+  .object({
+    club_uuid: z.string().uuid().optional(),
+    query: z.string().trim().optional(),
+    offset: z
+      .preprocess(
+        (value) => (value === undefined ? undefined : Number(value)),
+        z.number().int().min(0),
+      )
+      .optional()
+      .default(0),
+    limit: z
+      .preprocess(
+        (value) => (value === undefined ? undefined : Number(value)),
+        z.number().int().min(1).max(100),
+      )
+      .optional()
+      .default(20),
+  })
+  .openapi('AdminClubHistoriesQuery')
+
+export type AdminClubHistoriesQuery = z.infer<typeof AdminClubHistoriesQuerySchema>
+
+const AdminClubHistorySnapshotSchema = z.record(z.unknown()).openapi('AdminClubHistorySnapshot')
+
+const AdminClubHistorySchema = z
+  .object({
+    id: z.number().int(),
+    club_uuid: z.string().uuid(),
+    club_name: z.string(),
+    updated_by: z.object({
+      service_user_id: z.string().uuid(),
+      name: z.string(),
+    }),
+    changed_fields: z.array(z.string()),
+    before_data: AdminClubHistorySnapshotSchema,
+    after_data: AdminClubHistorySnapshotSchema,
+    created_at: z.string(),
+  })
+  .openapi('AdminClubHistory')
+
+export const AdminClubHistoriesResponseSchema = z
+  .object({
+    success: z.literal(true),
+    message: z.string(),
+    data: z.object({
+      total_count: z.number().int(),
+      histories: z.array(AdminClubHistorySchema),
+    }),
+  })
+  .openapi('AdminClubHistoriesResponse')
+
+export type AdminClubHistoriesResponse = z.infer<typeof AdminClubHistoriesResponseSchema>

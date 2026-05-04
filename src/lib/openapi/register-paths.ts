@@ -55,6 +55,8 @@ import {
 } from 'src/lib/schemas/managers'
 import {
   AdminClubDetailResponseSchema,
+  AdminClubHistoriesQuerySchema,
+  AdminClubHistoriesResponseSchema,
   AdminClubsQuerySchema,
   AdminClubsResponseSchema,
   AdminClubStatusUpdateResponseSchema,
@@ -292,6 +294,51 @@ const adminClubStatusUpdateResponseExample = {
     club_uuid: '123e4567-e89b-12d3-a456-426614174000',
     status: 'APPROVED',
     processed_at: '2026-04-02T10:00:00Z',
+  },
+}
+
+const adminClubHistoriesResponseExample = {
+  success: true,
+  message: '동아리 수정 이력 조회가 완료되었습니다.',
+  data: {
+    total_count: 120,
+    histories: [
+      {
+        id: 501,
+        club_uuid: '123e4567-e89b-12d3-a456-426614174000',
+        club_name: '와플스튜디오',
+        updated_by: {
+          service_user_id: '417bdb60-c70c-4dfa-bfd4-a5a55a0ae001',
+          name: '홍길동',
+        },
+        changed_fields: ['short_description', 'sns'],
+        before_data: {
+          uuid: '123e4567-e89b-12d3-a456-426614174000',
+          name: '와플스튜디오',
+          short_description: '개발 동아리',
+          category: '진로',
+          sns: 'https://old-link.com',
+          affiliation_type: '소속동아리',
+          college_major_id: 36,
+          has_dongbang: true,
+          dongbang_location: '63동 619호',
+          updated_at: '2026-03-01T10:00:00Z',
+        },
+        after_data: {
+          uuid: '123e4567-e89b-12d3-a456-426614174000',
+          name: '와플스튜디오',
+          short_description: '서울대 최대 규모 개발 동아리',
+          category: '진로',
+          sns: 'https://new-link.com',
+          affiliation_type: '소속동아리',
+          college_major_id: 36,
+          has_dongbang: true,
+          dongbang_location: '63동 619호',
+          updated_at: '2026-04-02T15:00:00Z',
+        },
+        created_at: '2026-04-02T15:00:00Z',
+      },
+    ],
   },
 }
 
@@ -1460,6 +1507,34 @@ registry.registerPath({
       },
     },
     400: validationErrorResponse,
+    403: forbiddenResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/admin/clubs/histories',
+  tags: ['Admin'],
+  summary: '운영진 전용 동아리 수정 이력 조회',
+  description:
+    '이미 승인된 동아리의 정보가 수정되었을 때 기록된 before_data와 after_data를 조회합니다. club_uuid로 특정 동아리의 이력만 필터링할 수 있으며, query로 동아리명 또는 수정한 관리자 이름을 검색할 수 있고, offset/limit으로 페이지네이션할 수 있습니다.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    query: AdminClubHistoriesQuerySchema,
+  },
+  responses: {
+    200: {
+      description: '조회 성공',
+      content: {
+        'application/json': {
+          schema: AdminClubHistoriesResponseSchema,
+          example: adminClubHistoriesResponseExample,
+        },
+      },
+    },
+    400: validationErrorResponse,
+    401: unauthorizedResponse,
     403: forbiddenResponse,
     500: internalServerErrorResponse,
   },
