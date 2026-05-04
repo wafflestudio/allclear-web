@@ -1,5 +1,5 @@
 import { In, IsNull, Repository } from 'typeorm'
-import { InjectRepository, Service } from '../provider'
+import { Inject, InjectRepository, Service } from '../provider'
 import {
   ClubEntity,
   ClubHistoryEntity,
@@ -32,6 +32,7 @@ import type {
   ManagedClubPatch,
 } from 'src/lib/schemas/managers'
 import { CollegeMajorEntity } from '../infra/database/entities/college-major.entity'
+import { ClubAccessService } from './club-access.service'
 
 type ClubUuid = string
 type ReviewKeywordId = string
@@ -72,6 +73,8 @@ export class ClubService {
   private readonly collegeMajorRepository: Repository<CollegeMajorEntity>
   @InjectRepository(ClubHistoryEntity)
   private readonly clubHistoryRepository: Repository<ClubHistoryEntity>
+  @Inject(ClubAccessService)
+  private readonly clubAccessService: ClubAccessService
 
   async findByUuid(uuid: string): Promise<Club> {
     this.userActivityLogRepository
@@ -80,7 +83,7 @@ export class ClubService {
         params: JSON.stringify({ uuid }),
       })
       .catch(console.error)
-    const club = await this.getClubEntityByUuid(uuid)
+    const club = await this.clubAccessService.getExistingClub(uuid)
     const clubReview = await this.getClubReviews([club.uuid])
     return toClubDomain(club, clubReview.get(club.uuid))
   }
@@ -92,7 +95,7 @@ export class ClubService {
         params: JSON.stringify({ uuid }),
       })
       .catch(console.error)
-    const club = await this.getPublicClubEntityByUuid(uuid)
+    const club = await this.clubAccessService.getPublicClub(uuid)
     const clubReview = await this.getClubReviews([club.uuid])
     return toClubDomain(club, clubReview.get(club.uuid))
   }
@@ -106,14 +109,8 @@ export class ClubService {
   }
 
   async getManagedClubByUuid(clubUuid: string, serviceUserId: string): Promise<Club> {
-    // check permission
-    await this.clubManagerRepository.findOneByOrFail({
-      clubId: clubUuid,
-      serviceUserId,
-    })
-    const club = await this.clubRepository.findOneByOrFail({
-      uuid: clubUuid,
-    })
+    await this.clubAccessService.assertManagedClub(clubUuid, serviceUserId)
+    const club = await this.clubAccessService.getExistingClub(clubUuid)
     return toClubDomain(club)
   }
 
@@ -168,7 +165,7 @@ export class ClubService {
   }
 
   async saveClubToMyCollection(serviceUserId: string, clubId: string) {
-    await this.getPublicClubEntityByUuid(clubId)
+    await this.clubAccessService.getPublicClub(clubId)
     await this.userSavedClubRepository.insert({ serviceUserId, clubId })
   }
 
@@ -276,7 +273,7 @@ export class ClubService {
   }
 
   async decideClubCreationRequest(clubUuid: string, decision: ClubCreationDecision): Promise<Club> {
-    await this.getClubEntityByUuid(clubUuid)
+    await this.clubAccessService.getExistingClub(clubUuid)
 
     await this.clubRepository.update(
       {
@@ -291,7 +288,7 @@ export class ClubService {
       },
     )
 
-    const club = await this.getClubEntityByUuid(clubUuid)
+    const club = await this.clubAccessService.getExistingClub(clubUuid)
     const clubReview = await this.getClubReviews([club.uuid])
     return toClubDomain(club, clubReview.get(club.uuid))
   }
@@ -605,7 +602,7 @@ export class ClubService {
       studentId,
     }: { clubId: string; name: string; phone: string; studentId: string },
   ) {
-    await this.getClubEntityByUuid(clubId)
+    await this.clubAccessService.getExistingClub(clubId)
     await this.clubManagerRegisterRequestRepository.insert({
       serviceUserId,
       clubId,
@@ -620,7 +617,7 @@ export class ClubService {
     serviceUserId: string,
     request: ClubManagerRequest,
   ): Promise<void> {
-    await this.getClubEntityByUuid(clubUuid)
+    await this.clubAccessService.getExistingClub(clubUuid)
 
     const existingManager = await this.clubManagerRepository.findOneBy({
       clubId: clubUuid,
@@ -648,34 +645,11 @@ export class ClubService {
   }
 
   async registerClubManager(serviceUserId: string, clubUuid: string) {
-    await this.getClubEntityByUuid(clubUuid)
+    await this.clubAccessService.getExistingClub(clubUuid)
     const exist = await this.clubManagerRepository.findOneBy({ serviceUserId, clubId: clubUuid })
     if (exist) {
       return
     }
     await this.clubManagerRepository.insert({ serviceUserId, clubId: clubUuid })
-  }
-
-  private async getClubEntityByUuid(uuid: string): Promise<ClubEntity> {
-    const club = await this.clubRepository.findOneBy({
-      uuid,
-      deletedAt: IsNull(),
-    })
-    if (!club) {
-      throw new NotFoundError('club not found')
-    }
-    return club
-  }
-
-  private async getPublicClubEntityByUuid(uuid: string): Promise<ClubEntity> {
-    const club = await this.clubRepository.findOneBy({
-      uuid,
-      status: PUBLIC_CLUB_STATUS,
-      deletedAt: IsNull(),
-    })
-    if (!club) {
-      throw new NotFoundError('club not found')
-    }
-    return club
   }
 }

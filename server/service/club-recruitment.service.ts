@@ -1,26 +1,22 @@
 import { IsNull, QueryFailedError, Repository } from 'typeorm'
-import { InjectRepository, Service } from '../provider'
-import { ClubEntity } from '../infra/database/entities'
-import { ClubManagerEntity } from '../infra/database/entities/club-manager.entity'
+import { Inject, InjectRepository, Service } from '../provider'
 import { ClubRecruitmentEntity } from '../infra/database/entities/club-recruitment.entity'
 import { RegularMeetingEntity } from '../infra/database/entities/regular-meeting.entity'
-import { ConflictError, ForbiddenError, NotFoundError } from '../domain/error'
-import { PUBLIC_CLUB_STATUS } from 'src/common/constants/club-status'
+import { ConflictError, NotFoundError } from '../domain/error'
 import { ClubRecruitment, toClubRecruitmentDomain } from '../domain/model/ClubRecruitment'
 import { CreateClubRecruitment, UpdateClubRecruitment } from 'src/lib/schemas/club-recruitments'
 import { formatYearMonth } from 'src/common/utils/formatYearMonth'
+import { ClubAccessService } from './club-access.service'
 
 @Service
 export class ClubRecruitmentService {
-  @InjectRepository(ClubEntity)
-  private readonly clubRepository: Repository<ClubEntity>
-  @InjectRepository(ClubManagerEntity)
-  private readonly clubManagerRepository: Repository<ClubManagerEntity>
   @InjectRepository(ClubRecruitmentEntity)
   private readonly clubRecruitmentRepository: Repository<ClubRecruitmentEntity>
+  @Inject(ClubAccessService)
+  private readonly clubAccessService: ClubAccessService
 
   async findPublicRecruitmentsByClub(clubUuid: string): Promise<ClubRecruitment[]> {
-    await this.assertPublicClubExists(clubUuid)
+    await this.clubAccessService.getPublicClub(clubUuid)
     const recruitments = await this.clubRecruitmentRepository.find({
       where: { clubId: clubUuid, deletedAt: IsNull() },
       order: { createdAt: 'DESC' },
@@ -31,7 +27,7 @@ export class ClubRecruitmentService {
   async findPublicRepresentativeRecruitmentByClub(
     clubUuid: string,
   ): Promise<ClubRecruitment | null> {
-    await this.assertPublicClubExists(clubUuid)
+    await this.clubAccessService.getPublicClub(clubUuid)
     const recruitment = await this.clubRecruitmentRepository.findOne({
       where: { clubId: clubUuid, deletedAt: IsNull() },
       order: { yearMonth: 'DESC', createdAt: 'DESC' },
@@ -43,7 +39,7 @@ export class ClubRecruitmentService {
     clubUuid: string,
     recruitmentId: string,
   ): Promise<ClubRecruitment> {
-    await this.assertPublicClubExists(clubUuid)
+    await this.clubAccessService.getPublicClub(clubUuid)
     const recruitment = await this.getRecruitmentEntity(clubUuid, recruitmentId)
     return toClubRecruitmentDomain(recruitment)
   }
@@ -52,7 +48,7 @@ export class ClubRecruitmentService {
     clubUuid: string,
     serviceUserId: string,
   ): Promise<ClubRecruitment[]> {
-    await this.assertManagedClubExists(clubUuid, serviceUserId)
+    await this.clubAccessService.assertManagedClub(clubUuid, serviceUserId)
     const recruitments = await this.clubRecruitmentRepository.find({
       where: { clubId: clubUuid, deletedAt: IsNull() },
       order: { createdAt: 'DESC' },
@@ -78,7 +74,7 @@ export class ClubRecruitmentService {
     serviceUserId: string,
     recruitment: CreateClubRecruitment,
   ): Promise<ClubRecruitment> {
-    await this.assertManagedClubExists(clubUuid, serviceUserId)
+    await this.clubAccessService.assertManagedClub(clubUuid, serviceUserId)
 
     const now = new Date().toISOString()
     const saved = await this.clubRecruitmentRepository.manager.transaction(async (manager) => {
@@ -116,7 +112,7 @@ export class ClubRecruitmentService {
       throw new NotFoundError('recruitment not found')
     }
 
-    await this.assertManagedClubExists(entity.clubId, serviceUserId)
+    await this.clubAccessService.assertManagedClub(entity.clubId, serviceUserId)
 
     const saved = await this.clubRecruitmentRepository.manager.transaction(async (manager) => {
       const clubRecruitmentRepository = manager.getRepository(ClubRecruitmentEntity)
@@ -148,7 +144,7 @@ export class ClubRecruitmentService {
     if (!recruitment) {
       throw new NotFoundError('recruitment not found')
     }
-    await this.assertManagedClubExists(recruitment.clubId, serviceUserId)
+    await this.clubAccessService.assertManagedClub(recruitment.clubId, serviceUserId)
     await this.clubRecruitmentRepository.softDelete(recruitment.id)
   }
 
@@ -222,7 +218,7 @@ export class ClubRecruitmentService {
     recruitmentId: string,
     serviceUserId: string,
   ): Promise<ClubRecruitmentEntity> {
-    await this.assertManagedClubExists(clubUuid, serviceUserId)
+    await this.clubAccessService.assertManagedClub(clubUuid, serviceUserId)
     return this.getRecruitmentEntity(clubUuid, recruitmentId)
   }
 
@@ -238,30 +234,6 @@ export class ClubRecruitmentService {
       throw new NotFoundError('recruitment not found')
     }
     return recruitment
-  }
-
-  private async assertPublicClubExists(clubUuid: string): Promise<void> {
-    const club = await this.clubRepository.findOneBy({
-      uuid: clubUuid,
-      status: PUBLIC_CLUB_STATUS,
-      deletedAt: IsNull(),
-    })
-    if (!club) {
-      throw new NotFoundError('club not found')
-    }
-  }
-
-  private async assertManagedClubExists(clubUuid: string, serviceUserId: string): Promise<void> {
-    const [club, clubManager] = await Promise.all([
-      this.clubRepository.findOneBy({ uuid: clubUuid, deletedAt: IsNull() }),
-      this.clubManagerRepository.findOneBy({ clubId: clubUuid, serviceUserId }),
-    ])
-    if (!club) {
-      throw new NotFoundError('club not found')
-    }
-    if (!clubManager) {
-      throw new ForbiddenError('not a manager of this club')
-    }
   }
 
   private async saveOrThrowConflict(
