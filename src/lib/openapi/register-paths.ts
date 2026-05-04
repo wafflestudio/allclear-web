@@ -30,11 +30,12 @@ import {
   UpdateClubReviewSchema,
 } from 'src/lib/schemas/clubs'
 import {
-  ClubRecruitmentIdParamsSchema,
   ClubRecruitmentParamsSchema,
   ClubRecruitmentSchema,
-  ClubRecruitmentsResponseSchema,
+  CreateRecruitmentResponseSchema,
   CreateClubRecruitmentSchema,
+  PublicClubRecruitmentDetailResponseSchema,
+  PublicClubRecruitmentsResponseSchema,
   RecruitmentIdParamsSchema,
   UpdateClubRecruitmentSchema,
   UpdateRecruitmentResponseSchema,
@@ -537,7 +538,7 @@ registry.registerPath({
       description: '조회 성공',
       content: {
         'application/json': {
-          schema: ClubRecruitmentsResponseSchema,
+          schema: PublicClubRecruitmentsResponseSchema,
         },
       },
     },
@@ -572,18 +573,18 @@ registry.registerPath({
 
 registry.registerPath({
   method: 'get',
-  path: '/api/v1/clubs/{uuid}/recruitments/{recruitmentId}',
+  path: '/api/v1/recruitments/{recruitmentId}',
   tags: ['Clubs'],
   summary: '동아리 모집공고 상세 조회',
   request: {
-    params: ClubRecruitmentIdParamsSchema,
+    params: RecruitmentIdParamsSchema,
   },
   responses: {
     200: {
       description: '조회 성공',
       content: {
         'application/json': {
-          schema: ClubRecruitmentSchema,
+          schema: PublicClubRecruitmentDetailResponseSchema,
         },
       },
     },
@@ -925,30 +926,6 @@ registry.registerPath({
 })
 
 registry.registerPath({
-  method: 'get',
-  path: '/api/v1/managers/me/clubs/{uuid}/recruitments',
-  tags: ['Managers'],
-  summary: '관리 중인 동아리 모집공고 목록 조회',
-  security: [{ bearerAuth: [] }],
-  request: {
-    params: ClubRecruitmentParamsSchema,
-  },
-  responses: {
-    200: {
-      description: '조회 성공',
-      content: {
-        'application/json': {
-          schema: ClubRecruitmentsResponseSchema,
-        },
-      },
-    },
-    400: validationErrorResponse,
-    404: notFoundResponse,
-    500: internalServerErrorResponse,
-  },
-})
-
-registry.registerPath({
   method: 'post',
   path: '/api/v1/managers/me/clubs/{uuid}/recruitments',
   tags: ['Managers'],
@@ -969,7 +946,7 @@ registry.registerPath({
       description: '생성 성공',
       content: {
         'application/json': {
-          schema: ClubRecruitmentSchema,
+          schema: CreateRecruitmentResponseSchema,
         },
       },
     },
