@@ -2,13 +2,18 @@ import { FindOptionsWhere, In, IsNull, Repository } from 'typeorm'
 import { InjectRepository, Service } from '../provider'
 import { ClubEntity, ClubHistoryEntity, ServiceUserEntity, UserEntity } from '../infra/database/entities'
 import { ClubManagerEntity } from '../infra/database/entities/club-manager.entity'
+import { ClubManagerRegisterRequestEntity } from '../infra/database/entities/club-manager-register-request.entity'
 import {
   ClubStatus,
   PUBLIC_CLUB_STATUS,
   REJECTED_CLUB_STATUS,
 } from 'src/common/constants/club-status'
 import { NotFoundError } from 'server/domain/error'
-import type { AdminClubHistoriesQuery, AdminClubStatusUpdate } from 'src/lib/schemas/admin'
+import type {
+  AdminClubHistoriesQuery,
+  AdminClubManagerRequestsQuery,
+  AdminClubStatusUpdate,
+} from 'src/lib/schemas/admin'
 
 export type AdminClubItem = {
   uuid: string
@@ -66,6 +71,20 @@ export type AdminClubHistoryItem = {
   created_at: string
 }
 
+export type AdminClubManagerRequestItem = {
+  id: number
+  club_uuid: string
+  club_name: string
+  applicant: {
+    service_user_id: string
+    name: string
+    phone: string
+    student_id: string
+  }
+  status: ClubStatus
+  created_at: string
+}
+
 @Service
 export class AdminClubService {
   @InjectRepository(ClubEntity)
@@ -76,6 +95,9 @@ export class AdminClubService {
 
   @InjectRepository(ClubHistoryEntity)
   private readonly clubHistoryRepository: Repository<ClubHistoryEntity>
+
+  @InjectRepository(ClubManagerRegisterRequestEntity)
+  private readonly clubManagerRegisterRequestRepository: Repository<ClubManagerRegisterRequestEntity>
 
   async getAdminClubs(status?: ClubStatus): Promise<AdminClubItem[]> {
     const where: FindOptionsWhere<ClubEntity> = {
@@ -278,5 +300,55 @@ export class AdminClubService {
         created_at: history.created_at,
       })),
     }
+  }
+
+  async getAdminClubManagerRequests({
+    status,
+  }: AdminClubManagerRequestsQuery): Promise<AdminClubManagerRequestItem[]> {
+    const query = this.clubManagerRegisterRequestRepository
+      .createQueryBuilder('manager_request')
+      .leftJoin(ClubEntity, 'club', 'club.uuid = manager_request.club_id')
+      .select([
+        'manager_request.id AS id',
+        'manager_request.club_id AS club_uuid',
+        "COALESCE(club.name, '') AS club_name",
+        'manager_request.service_user_id AS service_user_id',
+        'manager_request.name AS applicant_name',
+        'manager_request.phone AS applicant_phone',
+        'manager_request.student_id AS applicant_student_id',
+        'manager_request.status AS status',
+        'manager_request.created_at AS created_at',
+      ])
+      .orderBy('manager_request.created_at', 'DESC')
+
+    if (status) {
+      query.where('manager_request.status = :status', { status })
+    }
+
+    const requests = await query.getRawMany<{
+      id: string
+      club_uuid: string
+      club_name: string
+      service_user_id: string
+      applicant_name: string
+      applicant_phone: string
+      applicant_student_id: string
+      status: ClubStatus
+      created_at: string
+    }>()
+
+    return requests.map((request) => ({
+      id: Number(request.id),
+      club_uuid: request.club_uuid,
+      club_name: request.club_name,
+      applicant: {
+        service_user_id: request.service_user_id,
+        name: request.applicant_name,
+        phone: request.applicant_phone,
+        student_id: request.applicant_student_id,
+      },
+      status: request.status,
+      created_at: request.created_at,
+    }))
   }
 }

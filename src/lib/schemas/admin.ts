@@ -164,3 +164,42 @@ export const AdminClubHistoriesResponseSchema = z
   .openapi('AdminClubHistoriesResponse')
 
 export type AdminClubHistoriesResponse = z.infer<typeof AdminClubHistoriesResponseSchema>
+
+export const AdminClubManagerRequestsQuerySchema = z
+  .object({
+    status: z.enum(CLUB_STATUSES).optional(),
+  })
+  .openapi('AdminClubManagerRequestsQuery')
+
+export type AdminClubManagerRequestsQuery = z.infer<typeof AdminClubManagerRequestsQuerySchema>
+
+const AdminClubManagerRequestSchema = z
+  .object({
+    id: z.number().int(),
+    club_uuid: z.string().uuid(),
+    club_name: z.string(),
+    applicant: z.object({
+      service_user_id: z.string().uuid(),
+      name: z.string(),
+      phone: z.string(),
+      student_id: z.string(),
+    }),
+    status: z.enum(CLUB_STATUSES),
+    created_at: z.string(),
+  })
+  .openapi('AdminClubManagerRequest')
+
+export const AdminClubManagerRequestsResponseSchema = z
+  .object({
+    success: z.literal(true),
+    message: z.string(),
+    data: z.object({
+      total_count: z.number().int(),
+      requests: z.array(AdminClubManagerRequestSchema),
+    }),
+  })
+  .openapi('AdminClubManagerRequestsResponse')
+
+export type AdminClubManagerRequestsResponse = z.infer<
+  typeof AdminClubManagerRequestsResponseSchema
+>

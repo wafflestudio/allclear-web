@@ -57,6 +57,8 @@ import {
   AdminClubDetailResponseSchema,
   AdminClubHistoriesQuerySchema,
   AdminClubHistoriesResponseSchema,
+  AdminClubManagerRequestsQuerySchema,
+  AdminClubManagerRequestsResponseSchema,
   AdminClubsQuerySchema,
   AdminClubsResponseSchema,
   AdminClubStatusUpdateResponseSchema,
@@ -337,6 +339,42 @@ const adminClubHistoriesResponseExample = {
           updated_at: '2026-04-02T15:00:00Z',
         },
         created_at: '2026-04-02T15:00:00Z',
+      },
+    ],
+  },
+}
+
+const adminClubManagerRequestsResponseExample = {
+  success: true,
+  message: '매핑 신청 목록 조회가 완료되었습니다.',
+  data: {
+    total_count: 15,
+    requests: [
+      {
+        id: 12,
+        club_uuid: '123e4567-e89b-12d3-a456-426614174000',
+        club_name: '와플스튜디오',
+        applicant: {
+          service_user_id: '417bdb60-c70c-4dfa-bfd4-a5a55a0ae001',
+          name: '홍길동',
+          phone: '010-1234-5678',
+          student_id: '2021-12345',
+        },
+        status: 'PENDING',
+        created_at: '2026-04-29T14:00:00Z',
+      },
+      {
+        id: 11,
+        club_uuid: '234f5678-f90c-23e4-b567-537725285111',
+        club_name: '쿠킹마스터',
+        applicant: {
+          service_user_id: '528cec71-d81d-5egb-cgf5-b6b66b1bf112',
+          name: '김요리',
+          phone: '010-9876-5432',
+          student_id: '2022-54321',
+        },
+        status: 'APPROVED',
+        created_at: '2026-04-28T09:30:00Z',
       },
     ],
   },
@@ -1530,6 +1568,34 @@ registry.registerPath({
         'application/json': {
           schema: AdminClubHistoriesResponseSchema,
           example: adminClubHistoriesResponseExample,
+        },
+      },
+    },
+    400: validationErrorResponse,
+    401: unauthorizedResponse,
+    403: forbiddenResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/admin/clubs/manager-requests',
+  tags: ['Admin'],
+  summary: '운영진 전용 매핑 신청 목록 조회',
+  description:
+    '기존 동아리에 대해 관리자 권한을 요청한 유저들의 리스트를 조회합니다. status query로 PENDING, APPROVED, REJECTED 중 하나를 필터링할 수 있으며, query를 생략하면 전체 상태를 조회합니다.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    query: AdminClubManagerRequestsQuerySchema,
+  },
+  responses: {
+    200: {
+      description: '조회 성공',
+      content: {
+        'application/json': {
+          schema: AdminClubManagerRequestsResponseSchema,
+          example: adminClubManagerRequestsResponseExample,
         },
       },
     },
