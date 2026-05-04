@@ -1,8 +1,14 @@
-import { In, Repository } from 'typeorm'
+import { In, IsNull, Repository } from 'typeorm'
 import { InjectRepository, Service } from '../provider'
 import { ClubEntity } from '../infra/database/entities'
 import { ClubManagerEntity } from '../infra/database/entities/club-manager.entity'
-import { PENDING_CLUB_STATUS } from 'src/common/constants/club-status'
+import {
+  PENDING_CLUB_STATUS,
+  PUBLIC_CLUB_STATUS,
+  REJECTED_CLUB_STATUS,
+} from 'src/common/constants/club-status'
+import { NotFoundError } from 'server/domain/error'
+import type { PendingClubDecision } from 'src/lib/schemas/admin'
 
 export type PendingClubItem = {
   uuid: string
@@ -58,5 +64,45 @@ export class AdminClubService {
         },
       }
     })
+  }
+
+  async decidePendingClub(
+    clubUuid: string,
+    decision: PendingClubDecision,
+  ): Promise<{ club_uuid: string; status: PendingClubDecision['status']; processed_at: string }> {
+    const club = await this.clubRepository.findOneBy({
+      uuid: clubUuid,
+      status: PENDING_CLUB_STATUS,
+      deletedAt: IsNull(),
+    })
+
+    if (!club) {
+      throw new NotFoundError('pending club not found')
+    }
+
+    const processedAt = new Date().toISOString()
+    const isApproved = decision.status === PUBLIC_CLUB_STATUS
+    const isRejected = decision.status === REJECTED_CLUB_STATUS
+
+    await this.clubRepository.update(
+      {
+        uuid: clubUuid,
+        status: PENDING_CLUB_STATUS,
+        deletedAt: IsNull(),
+      },
+      {
+        status: decision.status,
+        approvedAt: isApproved ? processedAt : null,
+        rejectReason: isRejected ? decision.reject_reason?.trim() ?? '' : '',
+        isOfficialVerified: isApproved ? decision.is_official_verified : false,
+        verifiedAt: isApproved && decision.is_official_verified ? processedAt : null,
+      },
+    )
+
+    return {
+      club_uuid: clubUuid,
+      status: decision.status,
+      processed_at: processedAt,
+    }
   }
 }

@@ -45,7 +45,6 @@ import {
 } from 'src/lib/schemas/club-recruitments'
 import {
   ClubImageUploadSchema,
-  ClubCreationDecisionSchema,
   ClubRegisterRequestSchema,
   ClubManagerRequestSchema,
   ClubManagerRegisterRequestSchema,
@@ -54,7 +53,11 @@ import {
   ManagerClubParamsSchema,
   CreateVerificationRequestResponseSchema,
 } from 'src/lib/schemas/managers'
-import { PendingClubsResponseSchema } from 'src/lib/schemas/admin'
+import {
+  PendingClubDecisionResponseSchema,
+  PendingClubDecisionSchema,
+  PendingClubsResponseSchema,
+} from 'src/lib/schemas/admin'
 import {
   CollegeMajorsQuerySchema,
   CollegeMajorsResponseSchema,
@@ -998,36 +1001,6 @@ registry.registerPath({
 })
 
 registry.registerPath({
-  method: 'patch',
-  path: '/api/v1/club-creation-requests/{uuid}/decision',
-  tags: ['Managers'],
-  summary: '동아리 생성 요청 승인 또는 반려',
-  request: {
-    params: ClubUuidParamsSchema,
-    body: {
-      content: {
-        'application/json': {
-          schema: ClubCreationDecisionSchema,
-        },
-      },
-    },
-  },
-  responses: {
-    200: {
-      description: '처리 성공',
-      content: {
-        'application/json': {
-          schema: ClubSchema,
-        },
-      },
-    },
-    400: validationErrorResponse,
-    404: notFoundResponse,
-    500: internalServerErrorResponse,
-  },
-})
-
-registry.registerPath({
   method: 'get',
   path: '/api/v1/managers/me/clubs',
   tags: ['Managers'],
@@ -1401,6 +1374,38 @@ registry.registerPath({
       },
     },
     403: forbiddenResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v1/admin/clubs/pending/{uuid}/status',
+  tags: ['Admin'],
+  summary: '신규 동아리 등록 승인 및 반려',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: ClubUuidParamsSchema,
+    body: {
+      content: {
+        'application/json': {
+          schema: PendingClubDecisionSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: '처리 성공',
+      content: {
+        'application/json': {
+          schema: PendingClubDecisionResponseSchema,
+        },
+      },
+    },
+    400: validationErrorResponse,
+    403: forbiddenResponse,
+    404: notFoundResponse,
     500: internalServerErrorResponse,
   },
 })
