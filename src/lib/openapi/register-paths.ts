@@ -59,6 +59,8 @@ import {
   AdminClubHistoriesResponseSchema,
   AdminClubManagerRequestsQuerySchema,
   AdminClubManagerRequestsResponseSchema,
+  AdminClubVerificationRequestsQuerySchema,
+  AdminClubVerificationRequestsResponseSchema,
   AdminClubsQuerySchema,
   AdminClubsResponseSchema,
   AdminClubStatusUpdateResponseSchema,
@@ -375,6 +377,32 @@ const adminClubManagerRequestsResponseExample = {
         },
         status: 'APPROVED',
         created_at: '2026-04-28T09:30:00Z',
+      },
+    ],
+  },
+}
+
+const adminClubVerificationRequestsResponseExample = {
+  success: true,
+  message: '공식 인증 요청 목록 조회가 완료되었습니다.',
+  data: {
+    total_count: 8,
+    requests: [
+      {
+        id: 5,
+        club_uuid: '123e4567-e89b-12d3-a456-426614174000',
+        club_name: '와플스튜디오',
+        category: '진로',
+        status: 'PENDING',
+        created_at: '2026-04-29T17:00:00Z',
+      },
+      {
+        id: 3,
+        club_uuid: '234f5678-f90c-23e4-b567-537725285111',
+        club_name: '쿠킹마스터',
+        category: '문화',
+        status: 'APPROVED',
+        created_at: '2026-04-25T11:20:00Z',
       },
     ],
   },
@@ -1596,6 +1624,34 @@ registry.registerPath({
         'application/json': {
           schema: AdminClubManagerRequestsResponseSchema,
           example: adminClubManagerRequestsResponseExample,
+        },
+      },
+    },
+    400: validationErrorResponse,
+    401: unauthorizedResponse,
+    403: forbiddenResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/admin/clubs/verifications',
+  tags: ['Admin'],
+  summary: '운영진 전용 공식 인증 요청 목록 조회',
+  description:
+    '동아리 관리자들이 신청한 공식 인증 요청 리스트를 조회합니다. status query로 PENDING, APPROVED, REJECTED 중 하나를 필터링할 수 있으며, query를 생략하면 전체 상태를 조회합니다.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    query: AdminClubVerificationRequestsQuerySchema,
+  },
+  responses: {
+    200: {
+      description: '조회 성공',
+      content: {
+        'application/json': {
+          schema: AdminClubVerificationRequestsResponseSchema,
+          example: adminClubVerificationRequestsResponseExample,
         },
       },
     },

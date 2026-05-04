@@ -3,6 +3,7 @@ import { InjectRepository, Service } from '../provider'
 import { ClubEntity, ClubHistoryEntity, ServiceUserEntity, UserEntity } from '../infra/database/entities'
 import { ClubManagerEntity } from '../infra/database/entities/club-manager.entity'
 import { ClubManagerRegisterRequestEntity } from '../infra/database/entities/club-manager-register-request.entity'
+import { ClubVerificationRequestEntity } from '../infra/database/entities/club-verification-request.entity'
 import {
   ClubStatus,
   PUBLIC_CLUB_STATUS,
@@ -13,6 +14,7 @@ import type {
   AdminClubHistoriesQuery,
   AdminClubManagerRequestsQuery,
   AdminClubStatusUpdate,
+  AdminClubVerificationRequestsQuery,
 } from 'src/lib/schemas/admin'
 
 export type AdminClubItem = {
@@ -85,6 +87,15 @@ export type AdminClubManagerRequestItem = {
   created_at: string
 }
 
+export type AdminClubVerificationRequestItem = {
+  id: number
+  club_uuid: string
+  club_name: string
+  category: string
+  status: ClubStatus
+  created_at: string
+}
+
 @Service
 export class AdminClubService {
   @InjectRepository(ClubEntity)
@@ -98,6 +109,9 @@ export class AdminClubService {
 
   @InjectRepository(ClubManagerRegisterRequestEntity)
   private readonly clubManagerRegisterRequestRepository: Repository<ClubManagerRegisterRequestEntity>
+
+  @InjectRepository(ClubVerificationRequestEntity)
+  private readonly clubVerificationRequestRepository: Repository<ClubVerificationRequestEntity>
 
   async getAdminClubs(status?: ClubStatus): Promise<AdminClubItem[]> {
     const where: FindOptionsWhere<ClubEntity> = {
@@ -347,6 +361,45 @@ export class AdminClubService {
         phone: request.applicant_phone,
         student_id: request.applicant_student_id,
       },
+      status: request.status,
+      created_at: request.created_at,
+    }))
+  }
+
+  async getAdminClubVerificationRequests({
+    status,
+  }: AdminClubVerificationRequestsQuery): Promise<AdminClubVerificationRequestItem[]> {
+    const query = this.clubVerificationRequestRepository
+      .createQueryBuilder('verification_request')
+      .leftJoin(ClubEntity, 'club', 'club.uuid = verification_request.club_id')
+      .select([
+        'verification_request.id AS id',
+        'verification_request.club_id AS club_uuid',
+        "COALESCE(club.name, '') AS club_name",
+        "COALESCE(club.category, '') AS category",
+        'verification_request.status AS status',
+        'verification_request.created_at AS created_at',
+      ])
+      .orderBy('verification_request.created_at', 'DESC')
+
+    if (status) {
+      query.where('verification_request.status = :status', { status })
+    }
+
+    const requests = await query.getRawMany<{
+      id: string
+      club_uuid: string
+      club_name: string
+      category: string
+      status: ClubStatus
+      created_at: string
+    }>()
+
+    return requests.map((request) => ({
+      id: Number(request.id),
+      club_uuid: request.club_uuid,
+      club_name: request.club_name,
+      category: request.category,
       status: request.status,
       created_at: request.created_at,
     }))

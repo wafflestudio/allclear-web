@@ -203,3 +203,39 @@ export const AdminClubManagerRequestsResponseSchema = z
 export type AdminClubManagerRequestsResponse = z.infer<
   typeof AdminClubManagerRequestsResponseSchema
 >
+
+export const AdminClubVerificationRequestsQuerySchema = z
+  .object({
+    status: z.enum(CLUB_STATUSES).optional(),
+  })
+  .openapi('AdminClubVerificationRequestsQuery')
+
+export type AdminClubVerificationRequestsQuery = z.infer<
+  typeof AdminClubVerificationRequestsQuerySchema
+>
+
+const AdminClubVerificationRequestSchema = z
+  .object({
+    id: z.number().int(),
+    club_uuid: z.string().uuid(),
+    club_name: z.string(),
+    category: z.string(),
+    status: z.enum(CLUB_STATUSES),
+    created_at: z.string(),
+  })
+  .openapi('AdminClubVerificationRequest')
+
+export const AdminClubVerificationRequestsResponseSchema = z
+  .object({
+    success: z.literal(true),
+    message: z.string(),
+    data: z.object({
+      total_count: z.number().int(),
+      requests: z.array(AdminClubVerificationRequestSchema),
+    }),
+  })
+  .openapi('AdminClubVerificationRequestsResponse')
+
+export type AdminClubVerificationRequestsResponse = z.infer<
+  typeof AdminClubVerificationRequestsResponseSchema
+>
