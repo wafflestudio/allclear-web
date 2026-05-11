@@ -15,7 +15,7 @@ const api: NextApiHandler = async (req, res) => {
     await userService.serviceUserShouldExist(serviceUserId)
 
     if (req.method === 'POST') {
-      // POST /api/v1/managers/{service_user_id}/clubs/{club_uuid}
+      // POST /api/v2/managers/{service_user_id}/clubs/{club_uuid}
       await clubService.registerClubManager(serviceUserId, clubUuid)
       return res.status(201).end()
     }
