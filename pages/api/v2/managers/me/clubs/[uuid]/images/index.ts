@@ -72,7 +72,7 @@ export default async function imageUploadHandler(req: NextApiRequest, res: NextA
         clubService.updateClub(clubId, { imageUri, blurHash })
       await r(req, club.uuid, persist)
 
-      res.status(200).end(JSON.stringify({ ok: true }))
+      return res.status(200).end(JSON.stringify({ ok: true }))
     }
   } catch (err) {
     if (err instanceof UserNotFoundError) {

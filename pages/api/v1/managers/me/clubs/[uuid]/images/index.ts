@@ -28,7 +28,7 @@ async function r(
   return new Promise((resolve, reject) => {
     const busboy = Busboy({ headers: req.headers })
 
-    busboy.on('file', (fieldname, file, { filename, encoding, mimeType }) => {
+    busboy.on('file', (fieldname, file, { filename, mimeType }) => {
       const ext = filename.split('.').pop()
       const newFilename = `${uuidv4()}.${ext}`
       const imageUri = ENV.R2.GET_CLUB_IMAGE_PATH(newFilename)
@@ -75,7 +75,7 @@ export default async function imageUploadHandler(req: NextApiRequest, res: NextA
         clubService.updateClub(clubId, { imageUri, blurHash })
       await r(req, club.uuid, persist)
 
-      res.status(200).end(JSON.stringify({ ok: true }))
+      return res.status(200).end(JSON.stringify({ ok: true }))
     }
   } catch (err) {
     if (err instanceof UserNotFoundError) {
