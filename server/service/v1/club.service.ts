@@ -3,7 +3,8 @@ import { InjectRepository, Service } from 'server/provider'
 import { ClubEntity, UserActivityLogEntity, UserActivityLogType } from 'server/infra/database/entities'
 import { ClubCategory } from 'server/domain/model/ClubCategory'
 import { CATEGORIES } from 'src/fixtures/category'
-import { Club, ReviewKeyword, toClubDomain } from 'server/domain/model/Club'
+import { ReviewKeyword } from 'server/domain/model/Club'
+import { ENV } from 'server/ENV'
 import { ClubReviewKeywordEntity } from 'server/infra/database/entities/club-review-keyword.entity'
 import { UserClubReviewEntity } from 'server/infra/database/entities/user-club-review.entity'
 import { groupBy, round, toPairs } from 'lodash-es'
@@ -14,9 +15,79 @@ import dayjs from 'dayjs'
 import leven from 'leven'
 import { NotFoundError } from 'server/domain/error'
 
+export type V1Club = {
+  id: string
+  uuid: string
+  name: string
+  fullName: string
+  description: string
+  introduction: string
+  type: string
+  category: string
+  college: string
+  recruitType: string
+  isPopular: boolean
+  hasDongbang: boolean
+  activityCycle: string
+  membershipFee: string
+  tags: string[]
+  imageUri: string
+  blurHash: string | null
+  article: string
+  articleUploadedAt: string | null
+  avgRating: number
+  totalReviews: number
+  reviewKeywords: ReviewKeyword[]
+  latestComment: string
+}
+
+const encodeV1ImageUri = (imageUri: string | undefined): string => {
+  if (!imageUri) {
+    return ''
+  }
+  const splitter = '%2F'
+  const parts = imageUri.split(splitter)
+  const lastPart = parts.pop() ?? ''
+  return `${parts.join(splitter)}${splitter}${encodeURIComponent(lastPart)}`
+}
+
+const toV1ClubDomain = (
+  it: ClubEntity,
+  review?: {
+    totalReviews: number
+    avgRating: number
+    reviewKeywords: ReviewKeyword[]
+    latestComment: string
+  },
+): V1Club => ({
+  id: it.uuid,
+  uuid: it.uuid,
+  name: it.name,
+  fullName: it.fullName,
+  description: it.description,
+  introduction: it.introduction ?? '',
+  type: it.type,
+  category: it.category,
+  college: it.college ?? '',
+  recruitType: it.recruitType ?? '',
+  isPopular: it.isPopular,
+  hasDongbang: it.hasDongbang,
+  activityCycle: it.activityCycle ?? '',
+  membershipFee: it.membershipFee ?? '',
+  tags: it.tags,
+  imageUri: encodeV1ImageUri(it.imageUri) || ENV.R2.DEFAULT_CLUB_IMAGE,
+  blurHash: it.blurHash,
+  article: it.article ?? '',
+  articleUploadedAt: it.articleUploadedAt,
+  avgRating: review?.avgRating ?? 0,
+  totalReviews: review?.totalReviews ?? 0,
+  reviewKeywords: review?.reviewKeywords ?? [],
+  latestComment: review?.latestComment ?? '',
+})
+
 type ClubUuid = string
 type ReviewKeywordId = string
-const sortByPopularAndEachRandom = (clubs: Club[]) =>
+const sortByPopularAndEachRandom = (clubs: V1Club[]) =>
   clubs.sort((a, b) => {
     if (a.isPopular && !b.isPopular) {
       return -1
@@ -46,7 +117,7 @@ export class ClubServiceV1 {
   @InjectRepository(ClubManagerRegisterRequestEntityV1)
   private readonly clubManagerRegisterRequestRepository: Repository<ClubManagerRegisterRequestEntityV1>
 
-  async findByUuid(uuid: string): Promise<Club> {
+  async findByUuid(uuid: string): Promise<V1Club> {
     this.userActivityLogRepository
       .insert({
         type: UserActivityLogType.CALL_GET_CLUB_API,
@@ -57,17 +128,17 @@ export class ClubServiceV1 {
       uuid,
     })
     const clubReview = await this.getClubReviews([club.uuid])
-    return toClubDomain(club, clubReview.get(club.uuid))
+    return toV1ClubDomain(club, clubReview.get(club.uuid))
   }
 
-  async findByAuthKey(authkey: string): Promise<Club> {
+  async findByAuthKey(authkey: string): Promise<V1Club> {
     const club = await this.clubRepository.findOneByOrFail({
       authkey,
     })
-    return toClubDomain(club)
+    return toV1ClubDomain(club)
   }
 
-  async getManagedClubByUuid(clubUuid: string, serviceUserId: string): Promise<Club> {
+  async getManagedClubByUuid(clubUuid: string, serviceUserId: string): Promise<V1Club> {
     // check permission
     await this.clubManagerRepository.findOneByOrFail({
       clubId: clubUuid,
@@ -76,10 +147,10 @@ export class ClubServiceV1 {
     const club = await this.clubRepository.findOneByOrFail({
       uuid: clubUuid,
     })
-    return toClubDomain(club)
+    return toV1ClubDomain(club)
   }
 
-  async findByCategory(category: string): Promise<Club[]> {
+  async findByCategory(category: string): Promise<V1Club[]> {
     this.userActivityLogRepository
       .insert({
         type: UserActivityLogType.CALL_LIST_CLUBS_OF_CATEGORY_API,
@@ -90,36 +161,36 @@ export class ClubServiceV1 {
       category,
     })
     const clubReview = await this.getClubReviews(entities.map((it) => it.uuid))
-    const clubs = entities.map((it) => toClubDomain(it, clubReview.get(it.uuid)))
+    const clubs = entities.map((it) => toV1ClubDomain(it, clubReview.get(it.uuid)))
     return sortByPopularAndEachRandom(clubs)
   }
 
-  async findAllManagedByUser(serviceUserId: string): Promise<Club[]> {
+  async findAllManagedByUser(serviceUserId: string): Promise<V1Club[]> {
     const clubManagers = await this.clubManagerRepository.findBy({
       serviceUserId,
     })
     const clubs = await this.clubRepository.findBy({
       uuid: In(clubManagers.map((it) => it.clubId)),
     })
-    return clubs.map((it) => toClubDomain(it))
+    return clubs.map((it) => toV1ClubDomain(it))
   }
 
-  async findClubsReviewedByMe(serviceUserId: string): Promise<Club[]> {
+  async findClubsReviewedByMe(serviceUserId: string): Promise<V1Club[]> {
     const clubReviews = await this.userClubReviewRepository.findBy({ serviceUserId })
     const clubIds = Array.from(new Set(clubReviews.map((it) => it.clubId)))
     const club = await this.clubRepository.findBy({
       uuid: In(clubIds),
     })
-    return club.map((it) => toClubDomain(it))
+    return club.map((it) => toV1ClubDomain(it))
   }
 
-  async findMySavedClubs(serviceUserId: string): Promise<Club[]> {
+  async findMySavedClubs(serviceUserId: string): Promise<V1Club[]> {
     const savedClubs = await this.userSavedClubRepository.findBy({ serviceUserId })
     const clubIds = Array.from(new Set(savedClubs.map((it) => it.clubId)))
     const club = await this.clubRepository.findBy({
       uuid: In(clubIds),
     })
-    return club.map((it) => toClubDomain(it))
+    return club.map((it) => toV1ClubDomain(it))
   }
 
   async saveClubToMyCollection(serviceUserId: string, clubId: string) {
@@ -130,7 +201,7 @@ export class ClubServiceV1 {
     await this.userSavedClubRepository.delete({ serviceUserId, clubId })
   }
 
-  async findPopular(): Promise<Club[]> {
+  async findPopular(): Promise<V1Club[]> {
     this.userActivityLogRepository
       .insert({
         type: UserActivityLogType.CALL_LIST_POPULAR_CLUBS_API,
@@ -141,11 +212,11 @@ export class ClubServiceV1 {
       isPopular: true,
     })
     const clubReview = await this.getClubReviews(entities.map((it) => it.uuid))
-    const clubs = entities.map((it) => toClubDomain(it, clubReview.get(it.uuid)))
+    const clubs = entities.map((it) => toV1ClubDomain(it, clubReview.get(it.uuid)))
     return sortByPopularAndEachRandom(clubs)
   }
 
-  async findLatestUploaded(topN = 20): Promise<Club[]> {
+  async findLatestUploaded(topN = 20): Promise<V1Club[]> {
     const entities = await this.clubRepository.find({
       order: {
         articleUploadedAt: {
@@ -156,10 +227,10 @@ export class ClubServiceV1 {
       take: topN,
     })
     const clubReview = await this.getClubReviews(entities.map((it) => it.uuid))
-    return entities.map((it) => toClubDomain(it, clubReview.get(it.uuid)))
+    return entities.map((it) => toV1ClubDomain(it, clubReview.get(it.uuid)))
   }
 
-  async search(query: string): Promise<Club[]> {
+  async search(query: string): Promise<V1Club[]> {
     this.userActivityLogRepository
       .insert({
         type: UserActivityLogType.CALL_SEARCH_CLUBS_API,
@@ -188,7 +259,7 @@ export class ClubServiceV1 {
       ],
     })
     const clubReview = await this.getClubReviews(entities.map((it) => it.uuid))
-    const clubs = entities.map((it) => toClubDomain(it, clubReview.get(it.uuid)))
+    const clubs = entities.map((it) => toV1ClubDomain(it, clubReview.get(it.uuid)))
     return sortByPopularAndEachRandom(clubs)
   }
 
@@ -347,7 +418,7 @@ export class ClubServiceV1 {
     await this.clubManagerRegisterRequestRepository.insert({ serviceUserId, clubId, clubName })
   }
 
-  async findCandidatesByName(clubName: string | undefined, total = 5): Promise<Club[]> {
+  async findCandidatesByName(clubName: string | undefined, total = 5): Promise<V1Club[]> {
     const clubs = await this.clubRepository.find()
     let out = clubs.filter(
       (it) => it.name.includes(clubName ?? '') || it.fullName.includes(clubName ?? ''),
@@ -360,7 +431,7 @@ export class ClubServiceV1 {
       )
       out = [...out, ...candidiates]
     }
-    return out.slice(0, total).map((it) => toClubDomain(it))
+    return out.slice(0, total).map((it) => toV1ClubDomain(it))
   }
 
   private similarByEditDistance(

@@ -1,10 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { Provider } from 'server/provider'
 import { UserServiceV1 } from 'server/service/v1/user.service'
-import { CollegeMajor } from 'server/domain/model/CollegeMajor'
+import { V1CollegeMajor } from 'server/service/v1/user.service'
 
 type ResponseData = {
-  majors: CollegeMajor[]
+  majors: V1CollegeMajor[]
   totalSize: number
 }
 

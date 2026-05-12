@@ -1,4 +1,4 @@
-import { Club } from 'server/domain/model/Club'
+import { V1Club } from 'server/service/v1/club.service'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { Provider } from 'server/provider'
 import { ClubServiceV1 } from 'server/service/v1/club.service'
@@ -13,7 +13,7 @@ const ClubManagerRegisterRequestValidator = z.object({
 })
 
 type ResponseData = {
-  clubs: Club[]
+  clubs: V1Club[]
   totalSize: number
 }
 
@@ -44,7 +44,7 @@ export default async function handler(
         clubId,
         clubName,
       })
-      let clubs: Club[] = []
+      let clubs: V1Club[] = []
       if (clubId) {
         clubs = [await clubService.findByUuid(clubId)]
       } else {

@@ -3,11 +3,11 @@ import { Provider } from 'server/provider'
 import { UserServiceV1 } from 'server/service/v1/user.service'
 import { UserNotFoundError } from 'server/domain/error'
 import { ZodIssue } from 'zod'
-import { Club } from 'server/domain/model/Club'
+import { V1Club } from 'server/service/v1/club.service'
 import { ClubServiceV1 } from 'server/service/v1/club.service'
 
 type ResponseData = {
-  clubs: Club[]
+  clubs: V1Club[]
   totalSize: number
 }
 

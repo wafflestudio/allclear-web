@@ -13,8 +13,13 @@ import {
 import { User } from 'server/domain/model/User'
 import { UserNotFoundError } from 'server/domain/error'
 import { UpdateProfileDto } from 'pages/api/v1/users/me'
-import { CollegeMajor } from 'server/domain/model/CollegeMajor'
 import { CollegeMajorEntity } from 'server/infra/database/entities/college-major.entity'
+
+export type V1CollegeMajor = {
+  id: number
+  college: string
+  major: string
+}
 
 @Service
 export class UserServiceV1 {
@@ -152,7 +157,7 @@ export class UserServiceV1 {
     })
   }
 
-  async getCollegeMajors(): Promise<CollegeMajor[]> {
+  async getCollegeMajors(): Promise<V1CollegeMajor[]> {
     const entities = await this.collegeMajorRepository.find({
       order: {
         college: 'ASC',
@@ -161,8 +166,8 @@ export class UserServiceV1 {
     })
     return entities.map((entity) => ({
       id: entity.id,
-      college: entity.college,
-      major: entity.major,
+      college: entity.college ?? '',
+      major: entity.major ?? '',
     }))
   }
 
