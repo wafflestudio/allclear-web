@@ -1,0 +1,34 @@
+import { ClubEntity } from 'server/infra/database/entities'
+import { Club } from 'server/domain/model/Club'
+
+export type ClubSearchResponse = {
+  clubs: Club[]
+  correctedQuery: string | null
+  isTypoCorrected: boolean
+}
+
+export type SearchFilters = {
+  affiliationType?: string
+  isRecruiting?: boolean
+  recruitType?: '정기' | '상시'
+  hasMembershipFee?: boolean
+  hasDongbang?: boolean
+  isOfficialVerified?: boolean
+  minActivityPeriodMin?: number
+  minActivityPeriodMax?: number
+}
+
+export type SearchSortType = 'default'
+
+export type SearchOptions = {
+  filters: SearchFilters
+  sort?: SearchSortType
+}
+
+export type SearchMatchedClub = {
+  entity: ClubEntity
+  score?: number
+  matchedBy?: 'name' | 'short_description' | 'college_major'
+}
+
+export const DEFAULT_SEARCH_SORT: SearchSortType = 'default'
