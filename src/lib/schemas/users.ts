@@ -65,3 +65,24 @@ export const CollegeMajorsResponseSchema = z
     totalSize: z.number().int(),
   })
   .openapi('CollegeMajorsResponse')
+
+export const CreateRecentSearchSchema = z
+  .object({
+    query: z.string().trim().min(1),
+  })
+  .openapi('CreateRecentSearch')
+
+export const RecentSearchSchema = z
+  .object({
+    id: z.string(),
+    query: z.string(),
+    createdAt: z.string(),
+  })
+  .openapi('RecentSearch')
+
+export const RecentSearchesResponseSchema = z
+  .object({
+    recentSearches: z.array(RecentSearchSchema),
+    totalSize: z.number().int(),
+  })
+  .openapi('RecentSearchesResponse')

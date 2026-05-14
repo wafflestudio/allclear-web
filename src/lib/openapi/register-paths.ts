@@ -75,7 +75,9 @@ import {
 import {
   CollegeMajorsQuerySchema,
   CollegeMajorsResponseSchema,
+  CreateRecentSearchSchema,
   DownloadAppLogQuerySchema,
+  RecentSearchesResponseSchema,
   UpdateDeviceSchema,
   UpdateProfileSchema,
   UserClubsResponseSchema,
@@ -1157,6 +1159,67 @@ registry.registerPath({
   responses: {
     204: NoContentResponse,
     400: validationErrorResponse,
+    404: notFoundResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v2/users/me/recent-searches',
+  tags: ['Users'],
+  summary: '내 최근 검색어 목록 조회',
+  description: '현재 로그인한 사용자의 최근 검색어를 최신순으로 최대 8개 반환합니다.',
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      description: '조회 성공',
+      content: {
+        'application/json': {
+          schema: RecentSearchesResponseSchema,
+        },
+      },
+    },
+    404: notFoundResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/v2/users/me/recent-searches',
+  tags: ['Users'],
+  summary: '내 최근 검색어 저장',
+  description:
+    '원본 검색어를 사용자별로 저장합니다. 같은 검색어를 다시 저장하면 기존 row를 삭제 후 새로 insert하며, 최대 8개를 초과하면 가장 오래된 검색어부터 제거됩니다.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: CreateRecentSearchSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    204: NoContentResponse,
+    400: validationErrorResponse,
+    404: notFoundResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'delete',
+  path: '/api/v2/users/me/recent-searches',
+  tags: ['Users'],
+  summary: '내 최근 검색어 전체 삭제',
+  description:
+    '현재 로그인한 사용자의 최근 검색어를 전체 삭제합니다. 개별 삭제는 지원하지 않습니다.',
+  security: [{ bearerAuth: [] }],
+  responses: {
+    204: NoContentResponse,
     404: notFoundResponse,
     500: internalServerErrorResponse,
   },

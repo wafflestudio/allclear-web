@@ -8,6 +8,7 @@ import {
   UserActivityLogEntity,
   UserActivityLogType,
   UserEntity,
+  UserRecentSearchEntity,
   UserVoiceEntity,
 } from '../infra/database/entities'
 import { User } from '../domain/model/User'
@@ -16,6 +17,8 @@ import { UserRole } from '../infra/database/entities/user-role.enum'
 import { UpdateProfileDto } from '../../src/lib/schemas/users'
 import { CollegeMajor } from '../domain/model/CollegeMajor'
 import { CollegeMajorEntity } from '../infra/database/entities/college-major.entity'
+
+const RECENT_SEARCH_LIMIT = 8
 
 @Service
 export class UserService {
@@ -35,6 +38,8 @@ export class UserService {
   private readonly userActivityLogRepository: Repository<UserActivityLogEntity>
   @InjectRepository(CollegeMajorEntity)
   private readonly collegeMajorRepository: Repository<CollegeMajorEntity>
+  @InjectRepository(UserRecentSearchEntity)
+  private readonly userRecentSearchRepository: Repository<UserRecentSearchEntity>
 
   public async getUserByAccountId(accountId: string): Promise<User> {
     if (!accountId) {
@@ -189,5 +194,52 @@ export class UserService {
     if (!resource) {
       throw new UserNotFoundError(`User not found`)
     }
+  }
+
+  async findRecentSearches(
+    serviceUserId: string,
+    limit: number = RECENT_SEARCH_LIMIT,
+  ): Promise<UserRecentSearchEntity[]> {
+    return this.userRecentSearchRepository.find({
+      where: { serviceUserId },
+      order: { createdAt: 'DESC' },
+      take: limit,
+    })
+  }
+
+  async saveRecentSearch(
+    serviceUserId: string,
+    query: string,
+    limit: number = RECENT_SEARCH_LIMIT,
+  ): Promise<void> {
+    const normalizedQuery = query.trim()
+    await this.userRecentSearchRepository.manager.transaction(async (manager) => {
+      const repository = manager.getRepository(UserRecentSearchEntity)
+      await repository.delete({ serviceUserId, query: normalizedQuery })
+      await repository.insert({ serviceUserId, query: normalizedQuery })
+      await this.evictOldRecentSearches(repository, serviceUserId, limit)
+    })
+  }
+
+  async deleteRecentSearches(serviceUserId: string): Promise<void> {
+    await this.userRecentSearchRepository.delete({ serviceUserId })
+  }
+
+  private async evictOldRecentSearches(
+    repository: Repository<UserRecentSearchEntity>,
+    serviceUserId: string,
+    limit: number,
+  ): Promise<void> {
+    const recentSearches = await repository.find({
+      where: { serviceUserId },
+      order: { createdAt: 'DESC' },
+      skip: limit,
+    })
+
+    if (recentSearches.length === 0) {
+      return
+    }
+
+    await repository.delete(recentSearches.map((it) => it.id))
   }
 }
