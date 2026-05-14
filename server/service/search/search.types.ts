@@ -7,6 +7,8 @@ export type ClubSearchResponse = {
   isTypoCorrected: boolean
 }
 
+export type MinActivityPeriodFilter = '0' | '1' | '2' | '2_plus'
+
 export type SearchFilters = {
   affiliationType?: string
   isRecruiting?: boolean
@@ -14,8 +16,7 @@ export type SearchFilters = {
   hasMembershipFee?: boolean
   hasDongbang?: boolean
   isOfficialVerified?: boolean
-  minActivityPeriodMin?: number
-  minActivityPeriodMax?: number
+  minActivityPeriods?: MinActivityPeriodFilter[]
 }
 
 export type SearchSortType = 'default'
