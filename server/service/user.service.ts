@@ -202,7 +202,7 @@ export class UserService {
   ): Promise<UserRecentSearchEntity[]> {
     return this.userRecentSearchRepository.find({
       where: { serviceUserId },
-      order: { createdAt: 'DESC' },
+      order: { updatedAt: 'DESC' },
       take: limit,
     })
   }
@@ -213,33 +213,30 @@ export class UserService {
     limit: number = RECENT_SEARCH_LIMIT,
   ): Promise<void> {
     const normalizedQuery = query.trim()
-    await this.userRecentSearchRepository.manager.transaction(async (manager) => {
-      const repository = manager.getRepository(UserRecentSearchEntity)
-      await repository.delete({ serviceUserId, query: normalizedQuery })
-      await repository.insert({ serviceUserId, query: normalizedQuery })
-      await this.evictOldRecentSearches(repository, serviceUserId, limit)
-    })
+    const manager = this.userRecentSearchRepository.manager
+
+    await manager.query(
+      `INSERT INTO user_recent_search (service_user_id, query)
+       VALUES ($1, $2)
+       ON CONFLICT (service_user_id, query)
+       DO UPDATE SET updated_at = CURRENT_TIMESTAMP(6)`,
+      [serviceUserId, normalizedQuery],
+    )
+
+    await manager.query(
+      `DELETE FROM user_recent_search
+       WHERE service_user_id = $1
+         AND id NOT IN (
+           SELECT id FROM user_recent_search
+           WHERE service_user_id = $1
+           ORDER BY updated_at DESC
+           LIMIT $2
+         )`,
+      [serviceUserId, limit],
+    )
   }
 
   async deleteRecentSearches(serviceUserId: string): Promise<void> {
     await this.userRecentSearchRepository.delete({ serviceUserId })
-  }
-
-  private async evictOldRecentSearches(
-    repository: Repository<UserRecentSearchEntity>,
-    serviceUserId: string,
-    limit: number,
-  ): Promise<void> {
-    const recentSearches = await repository.find({
-      where: { serviceUserId },
-      order: { createdAt: 'DESC' },
-      skip: limit,
-    })
-
-    if (recentSearches.length === 0) {
-      return
-    }
-
-    await repository.delete(recentSearches.map((it) => it.id))
   }
 }

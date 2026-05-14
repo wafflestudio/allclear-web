@@ -30,7 +30,7 @@ export default async function handler(
         recentSearches: recentSearches.map((it) => ({
           id: it.id,
           query: it.query,
-          createdAt: it.createdAt,
+          createdAt: it.updatedAt,
         })),
         totalSize: recentSearches.length,
       })
