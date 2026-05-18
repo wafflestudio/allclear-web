@@ -76,7 +76,7 @@ export const RecentSearchSchema = z
   .object({
     id: z.string(),
     query: z.string(),
-    createdAt: z.string(),
+    searchedAt: z.string(),
   })
   .openapi('RecentSearch')
 

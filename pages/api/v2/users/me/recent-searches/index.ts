@@ -8,7 +8,7 @@ import { CreateRecentSearchSchema } from 'src/lib/schemas/users'
 type RecentSearch = {
   id: string
   query: string
-  createdAt: string
+  searchedAt: string
 }
 
 type RecentSearchesResponse = {
@@ -30,7 +30,7 @@ export default async function handler(
         recentSearches: recentSearches.map((it) => ({
           id: it.id,
           query: it.query,
-          createdAt: it.updatedAt,
+          searchedAt: it.updatedAt,
         })),
         totalSize: recentSearches.length,
       })

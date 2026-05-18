@@ -1191,7 +1191,7 @@ registry.registerPath({
   tags: ['Users'],
   summary: '내 최근 검색어 저장',
   description:
-    '원본 검색어를 사용자별로 저장합니다. 같은 검색어를 다시 저장하면 기존 row를 삭제 후 새로 insert하며, 최대 8개를 초과하면 가장 오래된 검색어부터 제거됩니다.',
+    '원본 검색어를 사용자별로 저장합니다. 같은 검색어를 다시 저장하면 기존 row의 검색 시각을 갱신하며, 최대 8개를 초과하면 가장 오래된 검색어부터 제거됩니다.',
   security: [{ bearerAuth: [] }],
   request: {
     body: {
