@@ -718,7 +718,7 @@ registry.registerPath({
   tags: ['Clubs'],
   summary: '동아리 검색',
   description:
-    '동아리를 검색합니다. query는 필수이며, 검색 결과에 필터 조건을 추가로 적용할 수 있습니다. boolean 필터는 "true" 또는 "false" 문자열로 전달하고, min_activity_period는 0, 1, 2, 2_plus 중 하나 이상을 반복 query parameter로 전달합니다.',
+    '동아리를 검색합니다. query는 필수이며, 검색 결과에 필터 조건을 추가로 적용할 수 있습니다. boolean 필터는 "true" 또는 "false" 문자열로 전달하고, min_activity_period는 0, 1, 2, 3_plus 중 하나 이상을 반복 query parameter로 전달합니다.',
   request: {
     query: ClubSearchQuerySchema,
   },

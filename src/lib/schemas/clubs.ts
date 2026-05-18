@@ -13,7 +13,7 @@ export const ClubListByCategoryQuerySchema = z
   })
   .openapi('ClubListByCategoryQuery')
 
-export const MinActivityPeriodFilterSchema = z.enum(['0', '1', '2', '2_plus'])
+export const MinActivityPeriodFilterSchema = z.enum(['0', '1', '2', '3_plus'])
 
 export const ClubSearchQuerySchema = z
   .object({

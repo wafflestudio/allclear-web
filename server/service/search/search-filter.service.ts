@@ -58,25 +58,25 @@ export class SearchFilterService {
       return
     }
 
-    const hasTwoOrMore = minActivityPeriods.includes('2_plus')
+    const hasThreeOrMore = minActivityPeriods.includes('3_plus')
     const exactValues = minActivityPeriods
-      .filter((value): value is '0' | '1' | '2' => value !== '2_plus')
+      .filter((value): value is '0' | '1' | '2' => value !== '3_plus')
       .map(Number)
 
-    if (hasTwoOrMore && exactValues.length > 0) {
+    if (hasThreeOrMore && exactValues.length > 0) {
       qb.andWhere(
         '(club.min_activity_period IN (:...minActivityPeriodExactValues) OR club.min_activity_period >= :minActivityPeriodGte)',
         {
           minActivityPeriodExactValues: exactValues,
-          minActivityPeriodGte: 2,
+          minActivityPeriodGte: 3,
         },
       )
       return
     }
 
-    if (hasTwoOrMore) {
+    if (hasThreeOrMore) {
       qb.andWhere('club.min_activity_period >= :minActivityPeriodGte', {
-        minActivityPeriodGte: 2,
+        minActivityPeriodGte: 3,
       })
       return
     }

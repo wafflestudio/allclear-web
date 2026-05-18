@@ -14,7 +14,7 @@ type ResponseData = {
 
 const INVALID_FILTER_MESSAGE = 'invalid search filter'
 
-const MIN_ACTIVITY_PERIOD_FILTERS = new Set<MinActivityPeriodFilter>(['0', '1', '2', '2_plus'])
+const MIN_ACTIVITY_PERIOD_FILTERS = new Set<MinActivityPeriodFilter>(['0', '1', '2', '3_plus'])
 
 class InvalidSearchFilterError extends Error {}
 

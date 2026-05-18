@@ -7,7 +7,7 @@ export type ClubSearchResponse = {
   isTypoCorrected: boolean
 }
 
-export type MinActivityPeriodFilter = '0' | '1' | '2' | '2_plus'
+export type MinActivityPeriodFilter = '0' | '1' | '2' | '3_plus'
 
 export type SearchFilters = {
   affiliationType?: string
