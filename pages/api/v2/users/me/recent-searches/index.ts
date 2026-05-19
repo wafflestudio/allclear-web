@@ -1,9 +1,13 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { z, ZodIssue } from 'zod'
-import { Provider } from 'server/provider'
-import { UserService } from 'server/service/user.service'
-import { UserNotFoundError } from 'server/domain/error'
-import { CreateRecentSearchSchema } from 'src/lib/schemas/users'
+import { BadRequestError, UnauthorizedError, UserNotFoundError } from 'server/domain/error'
+import {
+  deleteGuestRecentSearches,
+  deleteMemberRecentSearches,
+  findGuestRecentSearches,
+  findMemberRecentSearches,
+} from 'server/service/recent-search.service'
+import { resolveOptionalAuth } from 'server/util/optional-auth'
 
 type RecentSearch = {
   id: string
@@ -21,29 +25,32 @@ export default async function handler(
   res: NextApiResponse<RecentSearchesResponse | string | ZodIssue[]>,
 ) {
   try {
-    const userService = Provider.getService(UserService)
-    const user = await userService.getUserByAccountId(req.headers.user as string)
+    const auth = await resolveOptionalAuth(req)
 
     if (req.method === 'GET') {
-      const recentSearches = await userService.findRecentSearches(user.serviceUserId)
+      let recentSearches: RecentSearch[]
+      if (auth.type === 'member') {
+        recentSearches = await findMemberRecentSearches(auth.accountId)
+      } else if (auth.type === 'guest') {
+        recentSearches = await findGuestRecentSearches(auth.guestId)
+      } else {
+        assertNever(auth)
+      }
+
       return res.status(200).json({
-        recentSearches: recentSearches.map((it) => ({
-          id: it.id,
-          query: it.query,
-          searchedAt: it.updatedAt,
-        })),
+        recentSearches,
         totalSize: recentSearches.length,
       })
     }
 
-    if (req.method === 'POST') {
-      const { query } = CreateRecentSearchSchema.parse(req.body)
-      await userService.saveRecentSearch(user.serviceUserId, query)
-      return res.status(204).end()
-    }
-
     if (req.method === 'DELETE') {
-      await userService.deleteRecentSearches(user.serviceUserId)
+      if (auth.type === 'member') {
+        await deleteMemberRecentSearches(auth.accountId)
+      } else if (auth.type === 'guest') {
+        await deleteGuestRecentSearches(auth.guestId)
+      } else {
+        assertNever(auth)
+      }
       return res.status(204).end()
     }
 
@@ -52,10 +59,20 @@ export default async function handler(
     if (err instanceof UserNotFoundError) {
       return res.status(404).send('user not found')
     }
+    if (err instanceof UnauthorizedError) {
+      return res.status(401).send('unauthorized')
+    }
+    if (err instanceof BadRequestError) {
+      return res.status(400).send(err.message)
+    }
     if (err instanceof z.ZodError) {
       return res.status(400).json(err.errors)
     }
     console.error('recentSearches error: ', err)
     return res.status(500).send('internal server error')
   }
+}
+
+function assertNever(value: never): never {
+  throw new Error(`unexpected auth type: ${JSON.stringify(value)}`)
 }
