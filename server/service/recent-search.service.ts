@@ -1,6 +1,6 @@
-import { createHash } from 'crypto'
-import { getRedisClient } from 'server/infra/redis/client'
+import { getRequiredRedisClient } from 'server/infra/redis/client'
 import { Provider } from 'server/provider'
+import { assertNever } from 'server/util/assert-never'
 import { OptionalAuth } from 'server/util/optional-auth'
 import { UserService } from './user.service'
 
@@ -9,7 +9,6 @@ const GUEST_RECENT_SEARCH_TTL_SECONDS = 60 * 60 * 24
 const GUEST_RECENT_SEARCH_KEY_PREFIX = 'recent-searches:guest'
 
 export type RecentSearch = {
-  id: string
   query: string
   searchedAt: string
 }
@@ -19,7 +18,7 @@ export type GuestRecentSearchDebug = {
   ttl: number
   raw: Array<{
     query: string
-    score: number
+    timestamp: number
     searchedAt: string
   }>
   recentSearches: RecentSearch[]
@@ -30,7 +29,6 @@ export async function findMemberRecentSearches(accountId: string): Promise<Recen
   const user = await userService.getUserByAccountId(accountId)
   const recentSearches = await userService.findRecentSearches(user.serviceUserId)
   return recentSearches.map((it) => ({
-    id: it.id,
     query: it.query,
     searchedAt: it.updatedAt,
   }))
@@ -49,7 +47,7 @@ export async function deleteMemberRecentSearches(accountId: string): Promise<voi
 }
 
 export async function findGuestRecentSearches(guestId: string): Promise<RecentSearch[]> {
-  const redis = await requireRedisClient()
+  const redis = await getRequiredRedisClient()
   const values = (await redis.sendCommand([
     'ZREVRANGE',
     guestRecentSearchKey(guestId),
@@ -61,14 +59,13 @@ export async function findGuestRecentSearches(guestId: string): Promise<RecentSe
   const recentSearches: RecentSearch[] = []
   for (let index = 0; index < values.length; index += 2) {
     const query = values[index]
-    const searchedAtTimestamp = Number(values[index + 1])
-    if (!query || Number.isNaN(searchedAtTimestamp)) {
+    const timestamp = Number(values[index + 1])
+    if (!query || Number.isNaN(timestamp)) {
       continue
     }
     recentSearches.push({
-      id: guestRecentSearchId(query),
       query,
-      searchedAt: new Date(searchedAtTimestamp).toISOString(),
+      searchedAt: new Date(timestamp).toISOString(),
     })
   }
   return recentSearches
@@ -80,7 +77,7 @@ export async function saveGuestRecentSearch(guestId: string, query: string): Pro
     return
   }
 
-  const redis = await requireRedisClient()
+  const redis = await getRequiredRedisClient()
   const key = guestRecentSearchKey(guestId)
   await redis.sendCommand(['ZADD', key, String(Date.now()), normalizedQuery])
   await redis.sendCommand(['ZREMRANGEBYRANK', key, '0', String(-(RECENT_SEARCH_LIMIT + 1))])
@@ -88,12 +85,12 @@ export async function saveGuestRecentSearch(guestId: string, query: string): Pro
 }
 
 export async function deleteGuestRecentSearches(guestId: string): Promise<void> {
-  const redis = await requireRedisClient()
+  const redis = await getRequiredRedisClient()
   await redis.sendCommand(['DEL', guestRecentSearchKey(guestId)])
 }
 
 export async function findGuestRecentSearchDebug(guestId: string): Promise<GuestRecentSearchDebug> {
-  const redis = await requireRedisClient()
+  const redis = await getRequiredRedisClient()
   const key = guestRecentSearchKey(guestId)
   const ttl = await redis.ttl(key)
   const values = (await redis.sendCommand(['ZREVRANGE', key, '0', '-1', 'WITHSCORES'])) as string[]
@@ -102,18 +99,17 @@ export async function findGuestRecentSearchDebug(guestId: string): Promise<Guest
 
   for (let index = 0; index < values.length; index += 2) {
     const query = values[index]
-    const score = Number(values[index + 1])
-    if (!query || Number.isNaN(score)) {
+    const timestamp = Number(values[index + 1])
+    if (!query || Number.isNaN(timestamp)) {
       continue
     }
-    const searchedAt = new Date(score).toISOString()
+    const searchedAt = new Date(timestamp).toISOString()
     raw.push({
       query,
-      score,
+      timestamp,
       searchedAt,
     })
     recentSearches.push({
-      id: guestRecentSearchId(query),
       query,
       searchedAt,
     })
@@ -145,22 +141,6 @@ export async function saveRecentSearchBestEffort(auth: OptionalAuth, query: stri
   }
 }
 
-async function requireRedisClient() {
-  const redis = await getRedisClient()
-  if (!redis) {
-    throw new Error('redis is not configured')
-  }
-  return redis
-}
-
 function guestRecentSearchKey(guestId: string): string {
   return `${GUEST_RECENT_SEARCH_KEY_PREFIX}:${guestId}`
-}
-
-function guestRecentSearchId(query: string): string {
-  return `guest:${createHash('sha256').update(query).digest('hex')}`
-}
-
-function assertNever(value: never): never {
-  throw new Error(`unexpected auth type: ${JSON.stringify(value)}`)
 }

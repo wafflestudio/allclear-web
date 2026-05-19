@@ -6,14 +6,10 @@ import {
   deleteMemberRecentSearches,
   findGuestRecentSearches,
   findMemberRecentSearches,
+  RecentSearch,
 } from 'server/service/recent-search.service'
+import { assertNever } from 'server/util/assert-never'
 import { resolveOptionalAuth } from 'server/util/optional-auth'
-
-type RecentSearch = {
-  id: string
-  query: string
-  searchedAt: string
-}
 
 type RecentSearchesResponse = {
   recentSearches: RecentSearch[]
@@ -71,8 +67,4 @@ export default async function handler(
     console.error('recentSearches error: ', err)
     return res.status(500).send('internal server error')
   }
-}
-
-function assertNever(value: never): never {
-  throw new Error(`unexpected auth type: ${JSON.stringify(value)}`)
 }

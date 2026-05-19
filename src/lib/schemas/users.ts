@@ -74,7 +74,6 @@ export const GuestIdHeaderSchema = z
 
 export const RecentSearchSchema = z
   .object({
-    id: z.string(),
     query: z.string(),
     searchedAt: z.string(),
   })

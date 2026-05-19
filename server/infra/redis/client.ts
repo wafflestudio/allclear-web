@@ -40,3 +40,11 @@ export async function getRedisClient(): Promise<RedisClient | null> {
 
   return connectPromise
 }
+
+export async function getRequiredRedisClient(): Promise<RedisClient> {
+  const redis = await getRedisClient()
+  if (!redis) {
+    throw new Error('redis is not configured')
+  }
+  return redis
+}
