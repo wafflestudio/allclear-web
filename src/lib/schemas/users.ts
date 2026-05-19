@@ -66,11 +66,11 @@ export const CollegeMajorsResponseSchema = z
   })
   .openapi('CollegeMajorsResponse')
 
-export const CreateRecentSearchSchema = z
+export const GuestIdHeaderSchema = z
   .object({
-    query: z.string().trim().min(1),
+    'x-guest-id': z.string().uuid().optional(),
   })
-  .openapi('CreateRecentSearch')
+  .openapi('GuestIdHeader')
 
 export const RecentSearchSchema = z
   .object({
