@@ -18,7 +18,6 @@ export type GuestRecentSearchDebug = {
   ttl: number
   raw: Array<{
     query: string
-    timestamp: number
     searchedAt: string
   }>
   recentSearches: RecentSearch[]
@@ -106,7 +105,6 @@ export async function findGuestRecentSearchDebug(guestId: string): Promise<Guest
     const searchedAt = new Date(timestamp).toISOString()
     raw.push({
       query,
-      timestamp,
       searchedAt,
     })
     recentSearches.push({

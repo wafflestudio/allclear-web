@@ -33,7 +33,6 @@ export const TestGuestRecentSearchDebugResponseSchema = z
     raw: z.array(
       z.object({
         query: z.string(),
-        timestamp: z.number(),
         searchedAt: z.string(),
       }),
     ),
