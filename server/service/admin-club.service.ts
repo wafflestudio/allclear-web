@@ -103,6 +103,7 @@ export type AdminClubVerificationRequestItem = {
   club_name: string
   category: string
   status: ClubStatus
+  reject_reason: string | null
   created_at: string
 }
 
@@ -392,6 +393,7 @@ export class AdminClubService {
         "COALESCE(club.name, '') AS club_name",
         "COALESCE(club.category, '') AS category",
         'verification_request.status AS status',
+        'verification_request.reject_reason AS reject_reason',
         'verification_request.created_at AS created_at',
       ])
       .orderBy('verification_request.created_at', 'DESC')
@@ -406,6 +408,7 @@ export class AdminClubService {
       club_name: string
       category: string
       status: ClubStatus
+      reject_reason: string | null
       created_at: string
     }>()
 
@@ -415,6 +418,7 @@ export class AdminClubService {
       club_name: request.club_name,
       category: request.category,
       status: request.status,
+      reject_reason: request.reject_reason,
       created_at: request.created_at,
     }))
   }
@@ -503,20 +507,30 @@ export class AdminClubService {
         throw new NotFoundError('verification request not found')
       }
 
-      if (request.status !== PENDING_CLUB_STATUS) {
-        throw new ConflictError('verification request already processed')
-      }
-
       const processedAt = new Date().toISOString()
       const isApproved = decision.status === PUBLIC_CLUB_STATUS
       const isRejected = decision.status === REJECTED_CLUB_STATUS
+      const isPending = decision.status === PENDING_CLUB_STATUS
 
       if (isApproved) {
+        if (request.status !== PENDING_CLUB_STATUS) {
+          throw new ConflictError('can only approve from PENDING status')
+        }
         await clubRepository.update(
           { uuid: request.clubId },
           {
             isOfficialVerified: true,
             verifiedAt: processedAt,
+          },
+        )
+      }
+
+      if (isPending && request.status === PUBLIC_CLUB_STATUS) {
+        await clubRepository.update(
+          { uuid: request.clubId },
+          {
+            isOfficialVerified: false,
+            verifiedAt: null,
           },
         )
       }
