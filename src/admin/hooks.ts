@@ -93,7 +93,7 @@ export const useAdminDashboard = () => {
 
   const handleManagerDecide = (payload: {
     id: number
-    status: DecisionStatus
+    status: ClubStatus
     reject_reason?: string
   }) => managerRequestMutation.mutate(payload)
 

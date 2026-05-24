@@ -190,6 +190,7 @@ const AdminClubManagerRequestSchema = z
       student_id: z.string(),
     }),
     status: z.enum(CLUB_STATUSES),
+    reject_reason: z.string().nullable(),
     created_at: z.string(),
   })
   .openapi('AdminClubManagerRequest')
@@ -257,7 +258,7 @@ export type AdminClubManagerRequestStatusParams = z.infer<
 
 export const AdminClubManagerRequestStatusUpdateSchema = z
   .object({
-    status: z.enum(CLUB_DECISION_STATUSES),
+    status: z.enum(CLUB_STATUSES),
     reject_reason: z.string().trim().max(300).optional(),
   })
   .superRefine(({ status, reject_reason }, ctx) => {

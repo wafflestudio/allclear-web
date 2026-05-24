@@ -74,7 +74,7 @@ export const updateClubStatus = (payload: {
 
 export const updateManagerRequestStatus = (payload: {
   id: number
-  status: DecisionStatus
+  status: ClubStatus
   reject_reason?: string
 }) =>
   request(`/api/v2/admin/clubs/manager-requests/${payload.id}/status`, {

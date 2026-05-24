@@ -1,6 +1,11 @@
 import { FindOptionsWhere, In, IsNull, Repository } from 'typeorm'
 import { InjectRepository, Service } from '../provider'
-import { ClubEntity, ClubHistoryEntity, ServiceUserEntity, UserEntity } from '../infra/database/entities'
+import {
+  ClubEntity,
+  ClubHistoryEntity,
+  ServiceUserEntity,
+  UserEntity,
+} from '../infra/database/entities'
 import { ClubManagerEntity } from '../infra/database/entities/club-manager.entity'
 import { ClubManagerRegisterRequestEntity } from '../infra/database/entities/club-manager-register-request.entity'
 import { ClubVerificationRequestEntity } from '../infra/database/entities/club-verification-request.entity'
@@ -88,6 +93,7 @@ export type AdminClubManagerRequestItem = {
     student_id: string
   }
   status: ClubStatus
+  reject_reason: string | null
   created_at: string
 }
 
@@ -336,6 +342,7 @@ export class AdminClubService {
         'manager_request.phone AS applicant_phone',
         'manager_request.student_id AS applicant_student_id',
         'manager_request.status AS status',
+        'manager_request.reject_reason AS reject_reason',
         'manager_request.created_at AS created_at',
       ])
       .orderBy('manager_request.created_at', 'DESC')
@@ -353,6 +360,7 @@ export class AdminClubService {
       applicant_phone: string
       applicant_student_id: string
       status: ClubStatus
+      reject_reason: string | null
       created_at: string
     }>()
 
@@ -367,6 +375,7 @@ export class AdminClubService {
         student_id: request.applicant_student_id,
       },
       status: request.status,
+      reject_reason: request.reject_reason,
       created_at: request.created_at,
     }))
   }
@@ -428,15 +437,15 @@ export class AdminClubService {
         throw new NotFoundError('manager request not found')
       }
 
-      if (request.status !== PENDING_CLUB_STATUS) {
-        throw new ConflictError('manager request already processed')
-      }
-
       const processedAt = new Date().toISOString()
       const isApproved = decision.status === PUBLIC_CLUB_STATUS
       const isRejected = decision.status === REJECTED_CLUB_STATUS
+      const isPending = decision.status === PENDING_CLUB_STATUS
 
       if (isApproved) {
+        if (request.status !== PENDING_CLUB_STATUS) {
+          throw new ConflictError('can only approve from PENDING status')
+        }
         const existingManager = await clubManagerRepository.findOneBy({ clubId: request.clubId })
         if (existingManager) {
           throw new ConflictError('club already has a manager')
@@ -448,6 +457,13 @@ export class AdminClubService {
           name: request.name,
           phone: request.phone,
           studentId: request.studentId,
+        })
+      }
+
+      if (isPending && request.status === PUBLIC_CLUB_STATUS) {
+        await clubManagerRepository.delete({
+          clubId: request.clubId,
+          serviceUserId: request.serviceUserId,
         })
       }
 
