@@ -11,7 +11,7 @@ import {
   updateVerificationStatus,
 } from 'src/admin/api'
 import { ADMIN_AUTH_TOKEN_KEY } from 'src/admin/constants'
-import type { AdminTab, DecisionStatus, StatusFilter } from 'src/admin/types'
+import type { AdminTab, ClubStatus, DecisionStatus, StatusFilter } from 'src/admin/types'
 
 export const useAdminDashboard = () => {
   const queryClient = useQueryClient()
@@ -86,7 +86,7 @@ export const useAdminDashboard = () => {
 
   const handleClubDecide = (payload: {
     uuid: string
-    status: DecisionStatus
+    status: ClubStatus
     reject_reason?: string
     is_official_verified: boolean
   }) => clubStatusMutation.mutate(payload)

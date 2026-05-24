@@ -6,7 +6,7 @@ import type {
   AdminClubHistoriesResponse,
 } from 'src/lib/schemas/admin'
 import { ADMIN_AUTH_TOKEN_KEY, buildQuery } from 'src/admin/constants'
-import type { DecisionStatus, StatusFilter } from 'src/admin/types'
+import type { ClubStatus, DecisionStatus, StatusFilter } from 'src/admin/types'
 
 type FetchOptions = NonNullable<Parameters<typeof fetch>[1]>
 
@@ -59,7 +59,7 @@ export const fetchHistories = (query: string) =>
 
 export const updateClubStatus = (payload: {
   uuid: string
-  status: DecisionStatus
+  status: ClubStatus
   reject_reason?: string
   is_official_verified: boolean
 }) =>

@@ -53,6 +53,7 @@ export type AdminClubDetail = {
     sns: string
     introduction: string | null
     created_at: string
+    reject_reason: string | null
   }
   manager_data: {
     name: string
@@ -126,7 +127,7 @@ export class AdminClubService {
 
     const clubs = await this.clubRepository.find({
       where,
-      order: { createdAt: 'ASC' },
+      order: { createdAt: 'DESC' },
     })
 
     if (clubs.length === 0) return []
@@ -193,6 +194,7 @@ export class AdminClubService {
         sns: club.sns,
         introduction: club.introduction,
         created_at: club.createdAt,
+        reject_reason: club.rejectReason,
       },
       manager_data: {
         name: manager?.name ?? '',

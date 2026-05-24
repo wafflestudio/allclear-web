@@ -63,6 +63,7 @@ const AdminClubDetailClubSchema = z
     sns: z.string(),
     introduction: z.string().nullable(),
     created_at: z.string(),
+    reject_reason: z.string().nullable(),
   })
   .openapi('AdminClubDetailClub')
 
