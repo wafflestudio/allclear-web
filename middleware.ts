@@ -2,11 +2,23 @@ import { NextMiddleware, NextResponse } from 'next/server'
 import { ENV } from './server/ENV'
 import * as jose from 'jose'
 import { bearerToken } from './server/util/token'
+import { API_ERROR_CODES, createApiErrorBody } from './server/http/error-response'
 
 export const middleware: NextMiddleware = async (req) => {
   if (process.env.MAINTENANCE_MODE === 'true') {
+    if (!isV2ApiRequest(req)) {
+      return NextResponse.json(
+        { message: '서버 점검 중입니다. 잠시 후 다시 시도해주세요.' },
+        { status: 503 },
+      )
+    }
+
     return NextResponse.json(
-      { message: '서버 점검 중입니다. 잠시 후 다시 시도해주세요.' },
+      createApiErrorBody({
+        code: API_ERROR_CODES.SERVICE_UNAVAILABLE,
+        message: '서버 점검 중입니다. 잠시 후 다시 시도해주세요.',
+        requestId: middlewareRequestId(req),
+      }),
       { status: 503 },
     )
   }
@@ -14,9 +26,7 @@ export const middleware: NextMiddleware = async (req) => {
   try {
     const token = bearerToken(req.headers)
     if (!token) {
-      return new NextResponse('unauthorized', {
-        status: 401,
-      })
+      return unauthorized(req)
     }
     // edge runtime 호환되는 jose 사용
     const { payload } = await jose.jwtVerify(token, new TextEncoder().encode(ENV.JWT.SECRET_KEY), {
@@ -24,9 +34,7 @@ export const middleware: NextMiddleware = async (req) => {
     })
     const userId = payload.sub
     if (!userId) {
-      return new NextResponse('unauthorized', {
-        status: 401,
-      })
+      return unauthorized(req)
     }
     const userHeader = new Headers(req.headers)
     userHeader.set('user', userId)
@@ -37,9 +45,7 @@ export const middleware: NextMiddleware = async (req) => {
     })
   } catch (err) {
     console.error(err)
-    return new NextResponse('unauthorized', {
-      status: 401,
-    })
+    return unauthorized(req)
   }
 }
 export const config = {
@@ -85,4 +91,31 @@ export const config = {
     '/api/v1/managers/me/clubs/:uuid?',
     '/api/v1/managers/me/clubs/:uuid?/images',
   ],
+}
+
+function unauthorized(req: Parameters<NextMiddleware>[0]) {
+  if (!isV2ApiRequest(req)) {
+    return new NextResponse('unauthorized', {
+      status: 401,
+    })
+  }
+
+  return NextResponse.json(
+    createApiErrorBody({
+      code: API_ERROR_CODES.UNAUTHORIZED,
+      message: 'unauthorized',
+      requestId: middlewareRequestId(req),
+    }),
+    {
+      status: 401,
+    },
+  )
+}
+
+function middlewareRequestId(req: Parameters<NextMiddleware>[0]): string {
+  return req.headers.get('x-request-id') ?? crypto.randomUUID()
+}
+
+function isV2ApiRequest(req: Parameters<NextMiddleware>[0]): boolean {
+  return req.nextUrl.pathname.startsWith('/api/v2/')
 }

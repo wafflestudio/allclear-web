@@ -94,6 +94,31 @@ import {
 const ErrorMessageSchema = z.string()
 const NoContentResponse = { description: '성공적으로 처리되었습니다.' }
 
+const ApiErrorResponseSchema = z
+  .object({
+    error: z.object({
+      code: z.string(),
+      message: z.string(),
+      details: z.any().optional(),
+      requestId: z.string().optional(),
+    }),
+  })
+  .openapi('ApiErrorResponse')
+
+const v2ErrorResponse = (description: string) => ({
+  description,
+  content: {
+    'application/json': {
+      schema: ApiErrorResponseSchema,
+    },
+  },
+})
+
+const v2BadRequestResponse = v2ErrorResponse('잘못된 요청입니다.')
+const v2UnauthorizedResponse = v2ErrorResponse('인증이 필요합니다.')
+const v2NotFoundResponse = v2ErrorResponse('리소스를 찾을 수 없습니다.')
+const v2InternalServerErrorResponse = v2ErrorResponse('서버 내부 오류')
+
 const validationErrorResponse = {
   description: '잘못된 요청입니다.',
   content: {
@@ -130,15 +155,6 @@ const unauthorizedResponse = {
   },
 }
 
-const badRequestTextResponse = {
-  description: '잘못된 요청입니다.',
-  content: {
-    'text/plain': {
-      schema: ErrorMessageSchema,
-    },
-  },
-}
-
 const forbiddenResponse = {
   description: '권한이 없습니다.',
   content: {
@@ -159,11 +175,6 @@ const conflictResponse = {
 
 const successMessageSchema = z.object({
   success: z.literal(true),
-  message: z.string(),
-})
-
-const failedMessageSchema = z.object({
-  success: z.literal(false),
   message: z.string(),
 })
 
@@ -491,9 +502,10 @@ registry.registerPath({
   },
   responses: {
     204: NoContentResponse,
-    400: validationErrorResponse,
-    404: notFoundResponse,
-    500: internalServerErrorResponse,
+    400: v2BadRequestResponse,
+    401: v2UnauthorizedResponse,
+    404: v2NotFoundResponse,
+    500: v2InternalServerErrorResponse,
   },
 })
 
@@ -534,9 +546,10 @@ registry.registerPath({
   },
   responses: {
     204: NoContentResponse,
-    400: validationErrorResponse,
-    404: notFoundResponse,
-    500: internalServerErrorResponse,
+    400: v2BadRequestResponse,
+    401: v2UnauthorizedResponse,
+    404: v2NotFoundResponse,
+    500: v2InternalServerErrorResponse,
   },
 })
 
@@ -831,16 +844,9 @@ registry.registerPath({
         },
       },
     },
-    400: {
-      description: 'query, 필터 query string, 또는 비회원 x-guest-id header가 잘못되었습니다.',
-      content: {
-        'text/plain': {
-          schema: ErrorMessageSchema,
-        },
-      },
-    },
-    401: unauthorizedResponse,
-    500: internalServerErrorResponse,
+    400: v2BadRequestResponse,
+    401: v2UnauthorizedResponse,
+    500: v2InternalServerErrorResponse,
   },
 })
 
@@ -918,8 +924,9 @@ registry.registerPath({
         },
       },
     },
-    400: validationErrorResponse,
-    500: internalServerErrorResponse,
+    400: v2BadRequestResponse,
+    404: v2NotFoundResponse,
+    500: v2InternalServerErrorResponse,
   },
 })
 
@@ -954,20 +961,9 @@ registry.registerPath({
         },
       },
     },
-    400: {
-      description: '필수 필드가 누락되었거나 현재 신청할 수 없는 동아리 유형입니다.',
-      content: {
-        'application/json': {
-          schema: z.union([z.array(ValidationIssueSchema), failedMessageSchema]),
-          example: {
-            success: false,
-            message: '현재 교외 동아리는 등록 신청이 불가능합니다.',
-          },
-        },
-      },
-    },
-    401: unauthorizedResponse,
-    500: internalServerErrorResponse,
+    400: v2BadRequestResponse,
+    401: v2UnauthorizedResponse,
+    500: v2InternalServerErrorResponse,
   },
 })
 
@@ -1283,10 +1279,10 @@ registry.registerPath({
         },
       },
     },
-    400: badRequestTextResponse,
-    401: unauthorizedResponse,
-    404: notFoundResponse,
-    500: internalServerErrorResponse,
+    400: v2BadRequestResponse,
+    401: v2UnauthorizedResponse,
+    404: v2NotFoundResponse,
+    500: v2InternalServerErrorResponse,
   },
 })
 
@@ -1303,10 +1299,10 @@ registry.registerPath({
   },
   responses: {
     204: NoContentResponse,
-    400: badRequestTextResponse,
-    401: unauthorizedResponse,
-    404: notFoundResponse,
-    500: internalServerErrorResponse,
+    400: v2BadRequestResponse,
+    401: v2UnauthorizedResponse,
+    404: v2NotFoundResponse,
+    500: v2InternalServerErrorResponse,
   },
 })
 
@@ -1327,9 +1323,10 @@ registry.registerPath({
   },
   responses: {
     204: NoContentResponse,
-    400: validationErrorResponse,
-    404: notFoundResponse,
-    500: internalServerErrorResponse,
+    400: v2BadRequestResponse,
+    401: v2UnauthorizedResponse,
+    404: v2NotFoundResponse,
+    500: v2InternalServerErrorResponse,
   },
 })
 
@@ -1458,9 +1455,10 @@ registry.registerPath({
         },
       },
     },
-    400: validationErrorResponse,
-    404: notFoundResponse,
-    500: internalServerErrorResponse,
+    400: v2BadRequestResponse,
+    401: v2UnauthorizedResponse,
+    404: v2NotFoundResponse,
+    500: v2InternalServerErrorResponse,
   },
 })
 
@@ -1560,11 +1558,11 @@ registry.registerPath({
         },
       },
     },
-    400: validationErrorResponse,
-    401: unauthorizedResponse,
-    403: forbiddenResponse,
-    404: notFoundResponse,
-    500: internalServerErrorResponse,
+    400: v2BadRequestResponse,
+    401: v2UnauthorizedResponse,
+    403: v2ErrorResponse('권한이 없습니다.'),
+    404: v2NotFoundResponse,
+    500: v2InternalServerErrorResponse,
   },
 })
 
