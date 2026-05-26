@@ -1772,6 +1772,7 @@ registry.registerPath({
   summary: '앱 버전 정책 저장',
   description:
     'clientType별 최소 지원 버전을 저장합니다. 저장 후 해당 clientType의 Redis 캐시를 만료합니다.',
+  security: [{ internalApiKeyAuth: [] }],
   request: {
     body: {
       content: {
@@ -1791,6 +1792,7 @@ registry.registerPath({
       },
     },
     400: validationErrorResponse,
+    401: unauthorizedResponse,
     500: internalServerErrorResponse,
   },
 })

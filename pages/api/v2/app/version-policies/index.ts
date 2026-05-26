@@ -1,6 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next'
+import { timingSafeEqual } from 'crypto'
 import { ZodIssue, z } from 'zod'
 import { BadRequestError } from 'server/domain/error'
+import { ENV } from 'server/ENV'
 import { Provider } from 'server/provider'
 import { AppVersionService } from 'server/service/app-version.service'
 import {
@@ -8,12 +10,29 @@ import {
   AppVersionPolicyUpdateSchema,
 } from 'src/lib/schemas/app-versions'
 
+const isValidInternalApiKey = (apiKey: string | string[] | undefined): boolean => {
+  const expectedApiKey = ENV.APP_VERSION_POLICY.API_KEY
+  if (!expectedApiKey || !apiKey || Array.isArray(apiKey)) {
+    return false
+  }
+
+  const expectedBuffer = new TextEncoder().encode(expectedApiKey)
+  const actualBuffer = new TextEncoder().encode(apiKey)
+  return (
+    expectedBuffer.length === actualBuffer.length && timingSafeEqual(expectedBuffer, actualBuffer)
+  )
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<AppVersionPolicyResponse | string | ZodIssue[]>,
 ) {
   try {
     if (req.method === 'POST') {
+      if (!isValidInternalApiKey(req.headers['x-internal-api-key'])) {
+        return res.status(401).send('unauthorized')
+      }
+
       const appVersionService = Provider.getService(AppVersionService)
       const body = AppVersionPolicyUpdateSchema.parse(req.body)
       const policy = await appVersionService.upsertPolicy(body)
