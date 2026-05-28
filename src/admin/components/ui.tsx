@@ -225,8 +225,14 @@ export const ClubDetailModal = ({
   const detail = data?.data
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6">
-      <section className="max-h-full w-full max-w-4xl overflow-y-auto rounded-md bg-white shadow-xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6"
+      onClick={onClose}
+    >
+      <section
+        className="max-h-full w-full max-w-4xl overflow-y-auto rounded-md bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4">
           <div>
             <p className="text-sm font-medium text-slate-500">{subtitle}</p>
