@@ -155,6 +155,61 @@ export const EmptyState = ({ title }: { title: string }) => (
   </div>
 )
 
+const Toast = ({
+  id,
+  message,
+  type,
+  onDismiss,
+}: {
+  id: number
+  message: string
+  type: 'error' | 'success'
+  onDismiss: (id: number) => void
+}) => {
+  React.useEffect(() => {
+    const timer = setTimeout(() => onDismiss(id), 3000)
+    return () => clearTimeout(timer)
+  }, [id, onDismiss])
+
+  const styles =
+    type === 'error'
+      ? 'border-rose-200 bg-rose-50 text-rose-700 [&_button]:text-rose-400 [&_button:hover]:text-rose-600'
+      : 'border-emerald-200 bg-emerald-50 text-emerald-700 [&_button]:text-emerald-400 [&_button:hover]:text-emerald-600'
+
+  return (
+    <div
+      className={`flex max-w-sm items-start gap-3 rounded-md border px-4 py-3 shadow-lg ${styles}`}
+    >
+      <p className="flex-1 text-sm font-semibold">{message}</p>
+      <button
+        type="button"
+        onClick={() => onDismiss(id)}
+        className="shrink-0 text-lg leading-none"
+        aria-label="닫기"
+      >
+        ×
+      </button>
+    </div>
+  )
+}
+
+export const ToastContainer = ({
+  toasts,
+  onDismiss,
+}: {
+  toasts: { id: number; message: string; type: 'error' | 'success' }[]
+  onDismiss: (id: number) => void
+}) => {
+  if (!toasts.length) return null
+  return (
+    <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2">
+      {toasts.map((t) => (
+        <Toast key={t.id} {...t} onDismiss={onDismiss} />
+      ))}
+    </div>
+  )
+}
+
 export const ClubDetailModal = ({
   clubUuid,
   onClose,

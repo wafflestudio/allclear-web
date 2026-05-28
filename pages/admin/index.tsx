@@ -7,6 +7,7 @@ import { ClubsTab } from 'src/admin/components/ClubsTab'
 import { HistoriesTab } from 'src/admin/components/HistoriesTab'
 import { ManagerRequestsTab } from 'src/admin/components/ManagerRequestsTab'
 import { VerificationRequestsTab } from 'src/admin/components/VerificationRequestsTab'
+import { ToastContainer } from 'src/admin/components/ui'
 
 const AdminDashboardPage = () => {
   const {
@@ -18,6 +19,8 @@ const AdminDashboardPage = () => {
     setStatusFilter,
     totalCount,
     pendingCounts,
+    toasts,
+    dismissToast,
     handleLogin,
     handleLogout,
     clubs,
@@ -98,6 +101,7 @@ const AdminDashboardPage = () => {
           />
         )}
       </AdminLayout>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </>
   )
 }
