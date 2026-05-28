@@ -17,6 +17,7 @@ const AdminDashboardPage = () => {
     statusFilter,
     setStatusFilter,
     totalCount,
+    pendingCounts,
     handleLogin,
     handleLogout,
     clubs,
@@ -51,6 +52,7 @@ const AdminDashboardPage = () => {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         totalCount={totalCount}
+        pendingCounts={pendingCounts}
         statusFilter={statusFilter}
         onLogout={handleLogout}
       >
@@ -58,6 +60,7 @@ const AdminDashboardPage = () => {
           activeTab={activeTab}
           statusFilter={statusFilter}
           onStatusChange={setStatusFilter}
+          pendingCount={pendingCounts[activeTab as keyof typeof pendingCounts] ?? 0}
         />
         {activeTab === 'clubs' && (
           <ClubsTab

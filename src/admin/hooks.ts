@@ -40,6 +40,21 @@ export const useAdminDashboard = () => {
     () => fetchVerificationRequests(statusFilter),
     { enabled: activeTab === 'verificationRequests' && !!authToken },
   )
+
+  const clubsPendingQuery = useQuery(['admin-clubs-pending-count'], () => fetchClubs('PENDING'), {
+    enabled: !!authToken,
+    refetchInterval: 30_000,
+  })
+  const managerRequestsPendingQuery = useQuery(
+    ['admin-manager-requests-pending-count'],
+    () => fetchManagerRequests('PENDING'),
+    { enabled: !!authToken, refetchInterval: 30_000 },
+  )
+  const verificationsPendingQuery = useQuery(
+    ['admin-verifications-pending-count'],
+    () => fetchVerificationRequests('PENDING'),
+    { enabled: !!authToken, refetchInterval: 30_000 },
+  )
   const historiesQuery = useQuery(
     ['admin-club-histories', submittedHistoryQuery],
     () => fetchHistories(submittedHistoryQuery),
@@ -50,13 +65,20 @@ export const useAdminDashboard = () => {
     onSuccess: () => {
       queryClient.invalidateQueries('admin-clubs')
       queryClient.invalidateQueries('admin-club-detail')
+      queryClient.invalidateQueries('admin-clubs-pending-count')
     },
   })
   const managerRequestMutation = useMutation(updateManagerRequestStatus, {
-    onSuccess: () => queryClient.invalidateQueries('admin-manager-requests'),
+    onSuccess: () => {
+      queryClient.invalidateQueries('admin-manager-requests')
+      queryClient.invalidateQueries('admin-manager-requests-pending-count')
+    },
   })
   const verificationMutation = useMutation(updateVerificationStatus, {
-    onSuccess: () => queryClient.invalidateQueries('admin-verification-requests'),
+    onSuccess: () => {
+      queryClient.invalidateQueries('admin-verification-requests')
+      queryClient.invalidateQueries('admin-verifications-pending-count')
+    },
   })
 
   const totalCount = useMemo(() => {
@@ -113,6 +135,11 @@ export const useAdminDashboard = () => {
     statusFilter,
     setStatusFilter,
     totalCount,
+    pendingCounts: {
+      clubs: clubsPendingQuery.data?.data.total_count ?? 0,
+      managerRequests: managerRequestsPendingQuery.data?.data.total_count ?? 0,
+      verificationRequests: verificationsPendingQuery.data?.data.total_count ?? 0,
+    },
     handleLogin,
     handleLogout,
     clubs: {
