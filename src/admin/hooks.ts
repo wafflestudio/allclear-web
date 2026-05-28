@@ -9,6 +9,7 @@ import {
   updateClubStatus,
   updateManagerRequestStatus,
   updateVerificationStatus,
+  verifyAdminRole,
 } from 'src/admin/api'
 import { ADMIN_AUTH_TOKEN_KEY } from 'src/admin/constants'
 import type { AdminTab, ClubStatus, StatusFilter } from 'src/admin/types'
@@ -72,7 +73,8 @@ export const useAdminDashboard = () => {
     verificationRequestsQuery.data,
   ])
 
-  const handleLogin = (token: string) => {
+  const handleLogin = async (token: string) => {
+    await verifyAdminRole(token)
     window.localStorage.setItem(ADMIN_AUTH_TOKEN_KEY, token)
     setAuthToken(token)
     queryClient.invalidateQueries()
