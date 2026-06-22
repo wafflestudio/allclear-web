@@ -12,7 +12,7 @@ import {
 } from 'src/lib/schemas/admin'
 
 const isValidAdminRoleApiKey = (apiKey: string | string[] | undefined): boolean => {
-  const expectedApiKey = ENV.ADMIN_ROLE.API_KEY
+  const expectedApiKey = ENV.APP_VERSION_POLICY.API_KEY
   if (!expectedApiKey || !apiKey || Array.isArray(apiKey)) {
     return false
   }
