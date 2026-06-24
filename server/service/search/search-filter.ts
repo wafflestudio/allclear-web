@@ -1,10 +1,8 @@
 import { SelectQueryBuilder } from 'typeorm'
-import { ClubEntity } from 'server/infra/database/entities'
+import { ClubEntity, ClubRecruitmentEntity } from 'server/infra/database/entities'
 import { MinActivityPeriodFilter, SearchFilters } from './search.types'
 
-const LATEST_RECRUITMENT_ID = latestRecruitmentColumn('id')
-const LATEST_RECRUITMENT_DEADLINE = latestRecruitmentColumn('deadline')
-const LATEST_RECRUITMENT_HAS_MEMBERSHIP_FEE = latestRecruitmentColumn('has_membership_fee')
+const LATEST_RECRUITMENT_ALIAS = 'latest_recruitment'
 
 export function applySearchFilters(
   qb: SelectQueryBuilder<ClubEntity>,
@@ -80,29 +78,48 @@ function applyRecruitmentFilters(qb: SelectQueryBuilder<ClubEntity>, filters: Se
     return
   }
 
+  joinLatestRecruitment(qb)
+
   if (filters.hasMembershipFee !== undefined) {
-    qb.andWhere(`(${LATEST_RECRUITMENT_HAS_MEMBERSHIP_FEE}) = :hasMembershipFee`, {
+    qb.andWhere(`${LATEST_RECRUITMENT_ALIAS}.has_membership_fee = :hasMembershipFee`, {
       hasMembershipFee: filters.hasMembershipFee,
     })
   }
 
   if (filters.isRecruiting === true) {
-    qb.andWhere(`(${LATEST_RECRUITMENT_ID}) IS NOT NULL`)
-    qb.andWhere(`(${LATEST_RECRUITMENT_DEADLINE}) > NOW()`)
+    qb.andWhere(`${LATEST_RECRUITMENT_ALIAS}.id IS NOT NULL`)
+    qb.andWhere(`${LATEST_RECRUITMENT_ALIAS}.deadline > NOW()`)
   }
 
   if (filters.isRecruiting === false) {
-    qb.andWhere(`((${LATEST_RECRUITMENT_ID}) IS NULL OR (${LATEST_RECRUITMENT_DEADLINE}) <= NOW())`)
+    qb.andWhere(
+      `(${LATEST_RECRUITMENT_ALIAS}.id IS NULL OR ${LATEST_RECRUITMENT_ALIAS}.deadline <= NOW())`,
+    )
   }
 }
 
-function latestRecruitmentColumn(columnName: 'id' | 'deadline' | 'has_membership_fee'): string {
-  return `
-    SELECT recruitment.${columnName}
-    FROM club_recruitment recruitment
-    WHERE recruitment.club_id = club.uuid
-      AND recruitment.deleted_at IS NULL
-    ORDER BY recruitment.year_month DESC, recruitment.created_at DESC
-    LIMIT 1
-  `
+function joinLatestRecruitment(qb: SelectQueryBuilder<ClubEntity>): void {
+  const alreadyJoined = qb.expressionMap.joinAttributes.some(
+    (join) => join.alias.name === LATEST_RECRUITMENT_ALIAS,
+  )
+  if (alreadyJoined) {
+    return
+  }
+
+  qb.leftJoin(
+    (subQb) =>
+      subQb
+        .distinctOn(['recruitment.club_id'])
+        .select('recruitment.club_id', 'club_id')
+        .addSelect('recruitment.id', 'id')
+        .addSelect('recruitment.deadline', 'deadline')
+        .addSelect('recruitment.has_membership_fee', 'has_membership_fee')
+        .from(ClubRecruitmentEntity, 'recruitment')
+        .where('recruitment.deleted_at IS NULL')
+        .orderBy('recruitment.club_id', 'ASC')
+        .addOrderBy('recruitment.year_month', 'DESC')
+        .addOrderBy('recruitment.created_at', 'DESC'),
+    LATEST_RECRUITMENT_ALIAS,
+    `${LATEST_RECRUITMENT_ALIAS}.club_id = club.uuid`,
+  )
 }
