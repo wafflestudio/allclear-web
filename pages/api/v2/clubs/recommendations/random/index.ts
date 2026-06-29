@@ -16,7 +16,7 @@ export default async function handler(
     const clubService = Provider.getService(ClubService)
 
     if (req.method == 'GET') {
-      const clubs = await clubService.findRandomRecommendations(5)
+      const clubs = await clubService.findRandomRecommendations(10)
       return res.status(200).json({
         clubs: clubs,
         totalSize: clubs.length,

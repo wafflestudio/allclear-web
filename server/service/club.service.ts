@@ -214,7 +214,7 @@ export class ClubService {
     return entities.map((it) => toClubDomain(it, clubReview.get(it.uuid)))
   }
 
-  async findRandomRecommendations(limit = 5): Promise<Club[]> {
+  async findRandomRecommendations(limit = 10): Promise<Club[]> {
     const entities = await this.clubRepository
       .createQueryBuilder('club')
       .where('club.status = :status', { status: PUBLIC_CLUB_STATUS })
