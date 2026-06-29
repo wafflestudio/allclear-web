@@ -1,20 +1,35 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm'
-import { BaseTimeStampMixin } from './TimeStampMixin'
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm'
 
-@Entity('club_manager_register_request')
-export class ClubManagerRegisterRequestEntity extends BaseTimeStampMixin {
-  @PrimaryGeneratedColumn('increment', { name: 'id' })
-  id: number
+@Entity('club_manager_request')
+export class ClubManagerRegisterRequestEntity {
+  @PrimaryGeneratedColumn('increment', { type: 'bigint', name: 'id' })
+  id: string
 
   @Column({ type: 'uuid', name: 'service_user_id' })
   serviceUserId: string
 
-  @Column('uuid', { name: 'club_id', nullable: true })
-  clubId: string | null
+  @Column('uuid', { name: 'club_id' })
+  clubId: string
 
-  @Column('varchar', { name: 'club_name', length: 200, default: '' })
-  clubName: string
+  @Column({ type: 'varchar', name: 'name' })
+  name: string
 
-  @Column('timestamp', { precision: 6, name: 'approved_at', nullable: true })
-  approvedAt: string | null
+  @Column({ type: 'varchar', name: 'phone' })
+  phone: string
+
+  @Column({ type: 'varchar', name: 'student_id' })
+  studentId: string
+
+  @Column({ type: 'varchar', default: 'PENDING', name: 'status' })
+  status: string
+
+  @Column({ type: 'varchar', nullable: true, name: 'reject_reason' })
+  rejectReason: string | null
+
+  @CreateDateColumn({
+    type: 'timestamp with time zone',
+    default: () => 'NOW()',
+    name: 'created_at',
+  })
+  createdAt: string
 }

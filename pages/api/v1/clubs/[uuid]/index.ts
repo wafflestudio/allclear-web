@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { Provider } from 'server/provider'
-import { ClubService } from 'server/service/club.service'
-import { Club } from 'server/domain/model/Club'
+import { ClubServiceV1 } from 'server/service/v1/club.service'
+import { V1Club } from 'server/service/v1/club.service'
 import { z, ZodIssue } from 'zod'
 
 const QueryValidator = z.object({
@@ -10,10 +10,10 @@ const QueryValidator = z.object({
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<Club | string | ZodIssue[]>,
+  res: NextApiResponse<V1Club | string | ZodIssue[]>,
 ) {
   try {
-    const clubService = Provider.getService(ClubService)
+    const clubService = Provider.getService(ClubServiceV1)
     if (req.method == 'GET') {
       const { uuid: ClubUuid } = QueryValidator.parse(req.query)
       const club = await clubService.findByUuid(ClubUuid)

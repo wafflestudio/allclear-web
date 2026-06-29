@@ -1,9 +1,9 @@
 import { NextApiHandler } from 'next'
 import { z } from 'zod'
 import { Provider } from 'server/provider'
-import { ClubService } from 'server/service/club.service'
+import { ClubServiceV1 } from 'server/service/v1/club.service'
 import { NotFoundError } from 'server/domain/error'
-import { UserService } from '../../../../../../../server/service/user.service'
+import { UserServiceV1 } from '../../../../../../../server/service/v1/user.service'
 
 const QueryValidator = z.object({
   serviceUserId: z.string().uuid(),
@@ -12,8 +12,8 @@ const QueryValidator = z.object({
 
 const api: NextApiHandler = async (req, res) => {
   try {
-    const clubService = Provider.getService(ClubService)
-    const userService = Provider.getService(UserService)
+    const clubService = Provider.getService(ClubServiceV1)
+    const userService = Provider.getService(UserServiceV1)
 
     const { serviceUserId, uuid: clubUuid } = QueryValidator.parse(req.query)
     await userService.serviceUserShouldExist(serviceUserId)

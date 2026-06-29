@@ -1,8 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { Provider } from 'server/provider'
-import { UserService } from 'server/service/user.service'
+import { UserServiceV1 } from 'server/service/v1/user.service'
 import { UserNotFoundError } from 'server/domain/error'
-import { ClubService } from 'server/service/club.service'
+import { ClubServiceV1 } from 'server/service/v1/club.service'
 import { z } from 'zod'
 
 const QueryValidator = z.object({
@@ -10,8 +10,8 @@ const QueryValidator = z.object({
 })
 export default async function handler(req: NextApiRequest, res: NextApiResponse<null | string>) {
   try {
-    const userService = Provider.getService(UserService)
-    const clubService = Provider.getService(ClubService)
+    const userService = Provider.getService(UserServiceV1)
+    const clubService = Provider.getService(ClubServiceV1)
 
     const { uuid: clubUuid } = QueryValidator.parse(req.query)
     if (req.method === 'POST') {

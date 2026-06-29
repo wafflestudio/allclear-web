@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm'
+import { IsNull, Not, Repository } from 'typeorm'
 import { InjectRepository, Service } from '../provider'
 import {
   AccountEntity,
@@ -8,13 +8,17 @@ import {
   UserActivityLogEntity,
   UserActivityLogType,
   UserEntity,
+  UserRecentSearchEntity,
   UserVoiceEntity,
 } from '../infra/database/entities'
 import { User } from '../domain/model/User'
-import { UserNotFoundError } from '../domain/error'
-import { UpdateProfileDto } from '../../pages/api/v1/users/me'
+import { ForbiddenError, UserNotFoundError } from '../domain/error'
+import { UserRole } from '../infra/database/entities/user-role.enum'
+import { UpdateProfileDto } from '../../src/lib/schemas/users'
 import { CollegeMajor } from '../domain/model/CollegeMajor'
 import { CollegeMajorEntity } from '../infra/database/entities/college-major.entity'
+
+const RECENT_SEARCH_LIMIT = 8
 
 @Service
 export class UserService {
@@ -34,8 +38,9 @@ export class UserService {
   private readonly userActivityLogRepository: Repository<UserActivityLogEntity>
   @InjectRepository(CollegeMajorEntity)
   private readonly collegeMajorRepository: Repository<CollegeMajorEntity>
+  @InjectRepository(UserRecentSearchEntity)
+  private readonly userRecentSearchRepository: Repository<UserRecentSearchEntity>
 
-  @InjectRepository(DeviceEntity)
   public async getUserByAccountId(accountId: string): Promise<User> {
     if (!accountId) {
       throw new UserNotFoundError(`User not found`)
@@ -77,6 +82,24 @@ export class UserService {
     }
   }
 
+  public async updateUserRole(userId: string, role: UserRole): Promise<void> {
+    const user = await this.userRepository.findOneBy({ id: userId })
+    if (!user) {
+      throw new UserNotFoundError(`User not found`)
+    }
+    await this.userRepository.update(userId, { role })
+  }
+
+  public async assertAdminRole(accountId: string): Promise<void> {
+    const accountUser = await this.accountUserRepository.findOne({
+      where: { accountId },
+      relations: ['user'],
+    })
+    if (accountUser?.user?.role !== UserRole.ADMIN) {
+      throw new ForbiddenError('admin role required')
+    }
+  }
+
   public updateDevice(
     userId: string,
     pushId: string,
@@ -110,8 +133,8 @@ export class UserService {
         id: updateProfileDto.collegeMajorId,
       })
       if (collegeMajor) {
-        college = collegeMajor.college
-        major = collegeMajor.major
+        college = collegeMajor.college ?? ''
+        major = collegeMajor.major ?? ''
       }
     }
     await this.serviceUserRepository.update(user.serviceUserId, {
@@ -152,8 +175,14 @@ export class UserService {
     })
   }
 
-  async getCollegeMajors(): Promise<CollegeMajor[]> {
+  async getCollegeMajors(options: { includeNullMajor?: boolean } = {}): Promise<CollegeMajor[]> {
+    const { includeNullMajor = false } = options
     const entities = await this.collegeMajorRepository.find({
+      where: includeNullMajor
+        ? undefined
+        : {
+            major: Not(IsNull()),
+          },
       order: {
         college: 'ASC',
         id: 'ASC',
@@ -173,5 +202,49 @@ export class UserService {
     if (!resource) {
       throw new UserNotFoundError(`User not found`)
     }
+  }
+
+  async findRecentSearches(
+    serviceUserId: string,
+    limit: number = RECENT_SEARCH_LIMIT,
+  ): Promise<UserRecentSearchEntity[]> {
+    return this.userRecentSearchRepository.find({
+      where: { serviceUserId },
+      order: { updatedAt: 'DESC' },
+      take: limit,
+    })
+  }
+
+  async saveRecentSearch(
+    serviceUserId: string,
+    query: string,
+    limit: number = RECENT_SEARCH_LIMIT,
+  ): Promise<void> {
+    const normalizedQuery = query.trim()
+    const manager = this.userRecentSearchRepository.manager
+
+    await manager.query(
+      `INSERT INTO user_recent_search (service_user_id, query)
+       VALUES ($1, $2)
+       ON CONFLICT (service_user_id, query)
+       DO UPDATE SET updated_at = CURRENT_TIMESTAMP(6)`,
+      [serviceUserId, normalizedQuery],
+    )
+
+    await manager.query(
+      `DELETE FROM user_recent_search
+       WHERE service_user_id = $1
+         AND id NOT IN (
+           SELECT id FROM user_recent_search
+           WHERE service_user_id = $1
+           ORDER BY updated_at DESC
+           LIMIT $2
+         )`,
+      [serviceUserId, limit],
+    )
+  }
+
+  async deleteRecentSearches(serviceUserId: string): Promise<void> {
+    await this.userRecentSearchRepository.delete({ serviceUserId })
   }
 }

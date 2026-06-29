@@ -1,4 +1,5 @@
 import '../styles/globals.css'
+import 'swagger-ui-react/swagger-ui.css'
 
 import React, { useEffect, useRef } from 'react'
 import type { AppProps } from 'next/app'

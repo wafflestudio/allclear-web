@@ -1,10 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { Provider } from 'server/provider'
-import { UserService } from 'server/service/user.service'
-import { CollegeMajor } from 'server/domain/model/CollegeMajor'
+import { UserServiceV1 } from 'server/service/v1/user.service'
+import { V1CollegeMajor } from 'server/service/v1/user.service'
 
 type ResponseData = {
-  majors: CollegeMajor[]
+  majors: V1CollegeMajor[]
   totalSize: number
 }
 
@@ -13,7 +13,7 @@ export default async function handler(
   res: NextApiResponse<ResponseData | string>,
 ) {
   try {
-    const userService = Provider.getService(UserService)
+    const userService = Provider.getService(UserServiceV1)
 
     if (req.method == 'GET') {
       const collegeMajors = await userService.getCollegeMajors()

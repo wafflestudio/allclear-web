@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { User } from 'server/domain/model/User'
 import { Provider } from 'server/provider'
-import { UserService } from 'server/service/user.service'
+import { UserServiceV1 } from 'server/service/v1/user.service'
 import { UserNotFoundError } from '../../../../../server/domain/error'
 import { z, ZodIssue } from 'zod'
 import { bearerToken } from '../../../../../server/util/token'
@@ -31,7 +31,7 @@ export default async function handler(
   res: NextApiResponse<ResponseData | string | ZodIssue[]>,
 ) {
   try {
-    const userService = Provider.getService(UserService)
+    const userService = Provider.getService(UserServiceV1)
     if (req.method === 'GET') {
       const user = await userService.getUserByAccountId(req.headers.user as string)
 

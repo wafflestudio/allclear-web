@@ -1,9 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { z } from 'zod'
 import { Provider } from 'server/provider'
-import { UserService } from 'server/service/user.service'
+import { UserServiceV1 } from 'server/service/v1/user.service'
 import { UserNotFoundError } from 'server/domain/error'
-import { SlackService } from '../../../../../../server/service/slack.service'
+import { SlackServiceV1 } from 'server/service/v1/slack.service'
 
 const UserVoiceValidator = z.object({
   content: z.string().nonempty(),
@@ -11,8 +11,8 @@ const UserVoiceValidator = z.object({
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const userService = Provider.getService(UserService)
-    const slackService = Provider.getService(SlackService)
+    const userService = Provider.getService(UserServiceV1)
+    const slackService = Provider.getService(SlackServiceV1)
     if (req.method == 'POST') {
       try {
         const user = await userService.getUserByAccountId(req.headers.user as string)

@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import jwt from 'jsonwebtoken'
 import { Provider } from 'server/provider'
-import { AuthService } from 'server/service/auth.service'
+import { AuthServiceV1 } from 'server/service/v1/auth.service'
 import { ENV } from 'server/ENV'
 
 type ResponseData = {
@@ -13,7 +13,7 @@ export default async function handler(
   res: NextApiResponse<ResponseData | string>,
 ) {
   try {
-    const authService = Provider.getService(AuthService)
+    const authService = Provider.getService(AuthServiceV1)
 
     if (req.method == 'POST') {
       const accessToken = req.body.accessToken as string

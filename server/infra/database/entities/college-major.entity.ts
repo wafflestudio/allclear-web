@@ -6,9 +6,9 @@ export class CollegeMajorEntity extends TimeStampMixin {
   @PrimaryGeneratedColumn('increment', { name: 'id' })
   id: number
 
-  @Column({ type: 'varchar', length: 50, default: '', name: 'college' })
-  college: string
+  @Column({ type: 'varchar', length: 50, nullable: true, name: 'college' })
+  college: string | null
 
-  @Column({ type: 'varchar', length: 100, default: '', name: 'major' })
-  major: string
+  @Column({ type: 'varchar', length: 100, nullable: true, name: 'major' })
+  major: string | null
 }

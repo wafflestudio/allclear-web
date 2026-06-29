@@ -1,5 +1,6 @@
 const HOST = process.env.HOST ?? 'http://localhost:3000'
 const SERVER_BASE_URL = `${HOST}/api`
+const REDIS_URL = process.env.REDIS_URL ? `redis://${process.env.REDIS_URL}` : ''
 
 export const ENV = {
   HOST,
@@ -14,11 +15,18 @@ export const ENV = {
   KAKAO: {
     CLIENT_ID: process.env.KAKAO_CLIENT_ID ?? '',
     CLIENT_SECRET: process.env.KAKAO_CLIENT_SECRET ?? '',
-    REDIRECT_URI: `${SERVER_BASE_URL}/v1/auth/kakao/callback`,
+    REDIRECT_URI: `${SERVER_BASE_URL}/v2/auth/kakao/callback`,
   },
   JWT: {
     SECRET_KEY: process.env.JWT_SECRET_KEY ?? '',
   },
+  REDIS: {
+    URL: REDIS_URL,
+  },
+  APP_VERSION_POLICY: {
+    API_KEY: process.env.APP_VERSION_POLICY_API_KEY ?? '',
+  },
+
   R2: {
     ACCOUNT_ID: process.env.R2_ACCOUNT_ID ?? '',
     ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',

@@ -1,11 +1,11 @@
-import { Club } from 'server/domain/model/Club'
+import { V1Club } from 'server/service/v1/club.service'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { Provider } from 'server/provider'
-import { ClubService } from 'server/service/club.service'
+import { ClubServiceV1 } from 'server/service/v1/club.service'
 import { UserNotFoundError } from 'server/domain/error'
-import { UserService } from 'server/service/user.service'
+import { UserServiceV1 } from 'server/service/v1/user.service'
 import { z } from 'zod'
-import { SlackService } from '../../../../../../server/service/slack.service'
+import { SlackServiceV1 } from 'server/service/v1/slack.service'
 
 const ClubManagerRegisterRequestValidator = z.object({
   clubId: z.string().uuid().optional(),
@@ -13,7 +13,7 @@ const ClubManagerRegisterRequestValidator = z.object({
 })
 
 type ResponseData = {
-  clubs: Club[]
+  clubs: V1Club[]
   totalSize: number
 }
 
@@ -26,9 +26,9 @@ export default async function handler(
   res: NextApiResponse<ResponseData | string | null>,
 ) {
   try {
-    const clubService = Provider.getService(ClubService)
-    const userService = Provider.getService(UserService)
-    const slackService = Provider.getService(SlackService)
+    const clubService = Provider.getService(ClubServiceV1)
+    const userService = Provider.getService(UserServiceV1)
+    const slackService = Provider.getService(SlackServiceV1)
 
     const user = await userService.getUserByAccountId(req.headers.user as string)
     if (req.method == 'GET') {
@@ -44,7 +44,7 @@ export default async function handler(
         clubId,
         clubName,
       })
-      let clubs: Club[] = []
+      let clubs: V1Club[] = []
       if (clubId) {
         clubs = [await clubService.findByUuid(clubId)]
       } else {

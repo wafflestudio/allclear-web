@@ -1,46 +1,18 @@
 import { Club } from 'src/entities/club'
+import {
+  CLUB_AFFILIATION_TYPES,
+  CLUB_CATEGORIES,
+  CLUB_COLLEGES,
+  CLUB_RECRUIT_TYPES,
+} from 'src/fixtures/club-options'
 import { z } from 'zod'
+
+export { CLUB_AFFILIATION_TYPES, CLUB_CATEGORIES, CLUB_COLLEGES, CLUB_RECRUIT_TYPES }
 
 export type GetManageClubRequest = {
   uuid: Club['uuid']
   authorization: string
 }
-
-export const CLUB_COLLEGES = [
-  '단과대무관',
-  '중앙동아리',
-  '연합동아리',
-  '사범대학',
-  '자연과학대학',
-  '농업생명과학대학',
-  '경영대학',
-  '간호대학',
-  '공과대학',
-  '인문대학',
-  '생활과학대학',
-  '음악대학',
-  '사회과학대학',
-  '수의과대학',
-  '미술대학',
-  '법과대학',
-  '약학대학',
-  '의과대학',
-  '자유전공대학',
-] as const
-
-export const CLUB_CATEGORIES = [
-  '취미',
-  '공연',
-  '홍보',
-  '진로',
-  '종교',
-  '문화',
-  '학술',
-  '운동',
-  '봉사',
-] as const
-
-export const CLUB_RECRUIT_TYPES = ['정기', '상시', '매 학기', '매 년'] as const
 
 export const UpdateManageClubRequestValidator = z.object({
   name: z.string().nonempty().max(30),
@@ -61,6 +33,8 @@ export const UpdateManageClubRequestValidator = z.object({
     )
     .max(5),
   college: z.enum(CLUB_COLLEGES),
+  affiliationType: z.enum(CLUB_AFFILIATION_TYPES),
+  collegeMajorId: z.number().int().nullable().optional(),
   introduction: z.string().max(1000).nullable().optional(),
   detail: z.string().max(5000).nullable().optional(),
   file: z.any(),
@@ -85,7 +59,7 @@ export type ClubRepository = {
 
 export const getClubRepository = (): ClubRepository => ({
   updateManageClub: async (req) => {
-    await fetch(`/api/v1/managers/me/clubs/${req.uuid}`, {
+    await fetch(`/api/v2/managers/me/clubs/${req.uuid}`, {
       method: 'PUT',
       headers: {
         'x-authorization': req.authorization,
@@ -106,7 +80,7 @@ export const getClubRepository = (): ClubRepository => ({
     const formData = new FormData()
     formData.append('file', req.image)
 
-    await fetch(`/api/v1/managers/me/clubs/${req.uuid}/images`, {
+    await fetch(`/api/v2/managers/me/clubs/${req.uuid}/images`, {
       headers: {
         'x-authorization': req.authorization,
       },
@@ -116,7 +90,7 @@ export const getClubRepository = (): ClubRepository => ({
   },
 
   getManageClub: async (req) => {
-    const response = await fetch(`/api/v1/managers/me/clubs/${req.uuid}`, {
+    const response = await fetch(`/api/v2/managers/me/clubs/${req.uuid}`, {
       headers: {
         'x-authorization': req.authorization,
       },
