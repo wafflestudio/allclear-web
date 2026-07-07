@@ -47,6 +47,7 @@ import {
 import {
   ClubImageUploadSchema,
   ClubRegisterRequestSchema,
+  ClubRegisterResponseSchema,
   ClubManagerRequestSchema,
   ClubManagerRegisterRequestSchema,
   ManagedClubPatchSchema,
@@ -197,7 +198,6 @@ const clubRegisterRequestExample = {
   club_data: {
     name: '와플스튜디오',
     type: '교내',
-    image_uri: 'https://cdn.allclear.com/temp/upload_123.jpg',
     category: '진로',
     affiliation: '컴퓨터공학부',
     short_description: '웹/앱 개발 동아리',
@@ -955,7 +955,7 @@ registry.registerPath({
   tags: ['Clubs'],
   summary: '동아리 등록 신청',
   description:
-    '로그인한 사용자가 신규 동아리 등록을 신청합니다. 현재 교외 동아리는 신청할 수 없으며, 신청된 동아리는 PENDING 상태로 저장됩니다.',
+    '로그인한 사용자가 신규 동아리 등록을 신청합니다. 현재 교외 동아리는 신청할 수 없으며, 신청된 동아리는 PENDING 상태로 저장됩니다. 대표 이미지는 선택 입력이며, 응답의 club_uuid로 동아리장 이미지 업로드 API를 호출할 수 있습니다.',
   security: [{ bearerAuth: [] }],
   request: {
     body: {
@@ -972,10 +972,13 @@ registry.registerPath({
       description: '동아리 등록 신청 성공',
       content: {
         'application/json': {
-          schema: successMessageSchema,
+          schema: ClubRegisterResponseSchema,
           example: {
             success: true,
             message: '동아리 등록 신청이 완료되었습니다.',
+            data: {
+              club_uuid: '123e4567-e89b-12d3-a456-426614174000',
+            },
           },
         },
       },
