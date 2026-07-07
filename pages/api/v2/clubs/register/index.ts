@@ -22,13 +22,13 @@ export default async function handler(
     if (req.method === 'POST') {
       const user = await userService.getUserByAccountId(req.headers.user as string)
       const body = ClubRegisterRequestSchema.parse(req.body)
-      const { clubUuid } = await clubService.registerClub(user.serviceUserId, body)
+      const club = await clubService.registerClub(user.serviceUserId, body)
 
       return res.status(201).json({
         success: true,
         message: '동아리 등록 신청이 완료되었습니다.',
         data: {
-          club_uuid: clubUuid,
+          club,
         },
       })
     }

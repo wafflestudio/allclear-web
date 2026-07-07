@@ -119,7 +119,7 @@ export const ClubRegisterResponseSchema = z
     success: z.literal(true),
     message: z.string(),
     data: z.object({
-      club_uuid: z.string().uuid(),
+      club: ClubSchema,
     }),
   })
   .openapi('ClubRegisterResponse')

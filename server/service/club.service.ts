@@ -230,7 +230,7 @@ export class ClubService {
   async registerClub(
     serviceUserId: string,
     body: ClubRegisterRequest,
-  ): Promise<{ clubUuid: string }> {
+  ): Promise<Club> {
     const { club_data: club, manager_data: managerData } = body
     const clubPatch = await this.buildClubPatchFromClubData(club)
 
@@ -254,7 +254,12 @@ export class ClubService {
         studentId: managerData.student_id,
       })
 
-      return { clubUuid: created.uuid }
+      const savedClub = await clubRepository.findOneByOrFail({
+        uuid: created.uuid,
+        deletedAt: IsNull(),
+      })
+
+      return toClubDomain(savedClub)
     })
   }
 
