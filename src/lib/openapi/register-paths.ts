@@ -86,6 +86,8 @@ import {
   UpdateDeviceSchema,
   UpdateProfileSchema,
   UserClubsResponseSchema,
+  UserNotificationReadParamsSchema,
+  UserNotificationsResponseSchema,
   UserProfileResponseSchema,
   UserVoiceSchema,
 } from 'src/lib/schemas/users'
@@ -1371,6 +1373,73 @@ registry.registerPath({
   responses: {
     204: NoContentResponse,
     400: badRequestTextResponse,
+    401: unauthorizedResponse,
+    404: notFoundResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v2/users/me/notifications',
+  tags: ['Users'],
+  summary: '내 알림 목록 조회',
+  description:
+    '로그인한 사용자의 알림 목록을 최신순으로 조회합니다. 앱은 type, clubId, sourceType, sourceId를 사용해 알림 문구와 이동 동작을 결정할 수 있으며 unreadCount로 읽지 않은 알림 수를 확인합니다.',
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      description: '조회 성공',
+      content: {
+        'application/json': {
+          schema: UserNotificationsResponseSchema,
+          example: {
+            notifications: [
+              {
+                id: '4',
+                type: 'MANAGER_REQUEST_REJECTED',
+                clubId: '61fd37f4-b325-4754-8493-aa9099fe27f9',
+                sourceType: 'CLUB_MANAGER_REQUEST',
+                sourceId: '13',
+                readAt: null,
+                createdAt: '2026-07-10T12:00:00.000Z',
+              },
+              {
+                id: '3',
+                type: 'CLUB_REGISTRATION_APPROVED',
+                clubId: '61fd37f4-b325-4754-8493-aa9099fe27f9',
+                sourceType: 'CLUB',
+                sourceId: '61fd37f4-b325-4754-8493-aa9099fe27f9',
+                readAt: '2026-07-10T12:05:00.000Z',
+                createdAt: '2026-07-10T11:30:00.000Z',
+              },
+            ],
+            totalSize: 2,
+            unreadCount: 1,
+          },
+        },
+      },
+    },
+    401: unauthorizedResponse,
+    404: notFoundResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v2/users/me/notifications/{id}/read',
+  tags: ['Users'],
+  summary: '내 알림 읽음 처리',
+  description:
+    '로그인한 사용자의 특정 알림을 읽음 처리합니다. 이미 읽은 알림이면 readAt을 다시 변경하지 않고 성공으로 처리합니다. 다른 사용자의 알림 id이거나 존재하지 않는 알림이면 404를 반환합니다.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: UserNotificationReadParamsSchema,
+  },
+  responses: {
+    204: NoContentResponse,
+    400: validationErrorResponse,
     401: unauthorizedResponse,
     404: notFoundResponse,
     500: internalServerErrorResponse,
