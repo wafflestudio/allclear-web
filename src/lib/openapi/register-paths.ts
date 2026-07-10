@@ -2037,7 +2037,7 @@ registry.registerPath({
   tags: ['Admin'],
   summary: '운영진 전용 매핑 신청 승인 및 반려',
   description:
-    '운영진이 특정 동아리 관리 권한 신청 건을 승인 또는 반려합니다. 승인 시 신청 유저가 club_manager에 등록됩니다. 이미 처리된 요청은 다시 수정할 수 없습니다.',
+    '운영진이 특정 동아리 관리 권한 신청 건을 승인 또는 반려합니다. 승인 시 신청 유저가 club_manager에 등록되고 MANAGER_REQUEST_APPROVED 알림이 생성됩니다. 반려 시 MANAGER_REQUEST_REJECTED 알림이 생성됩니다. PENDING으로 변경하면 해당 신청 건의 기존 승인/반려 알림이 삭제됩니다.',
   security: [{ bearerAuth: [] }],
   request: {
     params: AdminClubManagerRequestStatusParamsSchema,
@@ -2171,7 +2171,7 @@ registry.registerPath({
   tags: ['Admin'],
   summary: '운영진 전용 동아리 상태 변경',
   description:
-    '운영진이 동아리 상태를 변경합니다. 현재 구현은 PENDING, APPROVED, REJECTED를 모두 허용하므로 반려된 동아리를 다시 PENDING으로 되돌릴 수 있습니다. REJECTED로 변경할 때는 reject_reason이 필요합니다.',
+    '운영진이 동아리 상태를 변경합니다. 현재 구현은 PENDING, APPROVED, REJECTED를 모두 허용하므로 반려된 동아리를 다시 PENDING으로 되돌릴 수 있습니다. APPROVED로 변경하면 CLUB_REGISTRATION_APPROVED 알림이 생성되고, REJECTED로 변경하면 CLUB_REGISTRATION_REJECTED 알림이 생성됩니다. PENDING으로 변경하면 해당 동아리의 기존 신규 동아리 승인/반려 알림이 삭제됩니다. REJECTED로 변경할 때는 reject_reason이 필요합니다.',
   security: [{ bearerAuth: [] }],
   request: {
     params: ClubUuidParamsSchema,

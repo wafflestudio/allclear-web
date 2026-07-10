@@ -212,17 +212,21 @@ export class ClubService {
     const rejectedManagedClubs = clubManagers
       .map((manager) => clubById.get(manager.clubId))
       .filter((club): club is ClubEntity => club?.status === REJECTED_CLUB_STATUS)
-      .map((club): ManagedClubListEntityItem => ({
-        club,
-        managementStatus: REJECTED_CLUB_STATUS,
-      }))
+      .map(
+        (club): ManagedClubListEntityItem => ({
+          club,
+          managementStatus: REJECTED_CLUB_STATUS,
+        }),
+      )
     const pendingManagedClubs = clubManagers
       .map((manager) => clubById.get(manager.clubId))
       .filter((club): club is ClubEntity => club?.status === PENDING_CLUB_STATUS)
-      .map((club): ManagedClubListEntityItem => ({
-        club,
-        managementStatus: PENDING_CLUB_STATUS,
-      }))
+      .map(
+        (club): ManagedClubListEntityItem => ({
+          club,
+          managementStatus: PENDING_CLUB_STATUS,
+        }),
+      )
     const pendingManagerRequestClubs = pendingManagerRequests
       .filter((request) => !managerClubIdSet.has(request.clubId))
       .map((request): ManagedClubListEntityItem | null => {
