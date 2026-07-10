@@ -1474,7 +1474,7 @@ registry.registerPath({
   tags: ['Managers'],
   summary: '내가 관리하는 동아리 목록',
   description:
-    '로그인한 사용자가 신청했거나 관리 중인 동아리 목록을 조회합니다. 승인 대기, 승인 완료, 반려 상태를 모두 포함합니다.',
+    '로그인한 사용자가 신청했거나 관리 중인 동아리 목록을 조회합니다. status는 동아리 자체의 승인 상태이며, 마이페이지 관리 목록의 상태 표시와 정렬은 managementStatus를 기준으로 판단합니다. 정렬 순서는 APPROVED, REJECTED, PENDING, MANAGER_REQUEST_PENDING 순이며, APPROVED 항목끼리는 동아리 수정일과 최신 모집공고 수정일 중 더 최근 날짜 기준 내림차순입니다.',
   security: [{ bearerAuth: [] }],
   responses: {
     200: {
@@ -1486,7 +1486,7 @@ registry.registerPath({
             success: true,
             message: '관리 중인 동아리 목록 및 신청 현황 조회가 완료되었습니다.',
             data: {
-              total_count: 2,
+              total_count: 4,
               clubs: [
                 {
                   uuid: '123e4567-e89b-12d3-a456-426614174000',
@@ -1498,6 +1498,23 @@ registry.registerPath({
                 },
                 {
                   uuid: '234f5678-f90c-23e4-b567-537725285111',
+                  name: '밴드동아리',
+                  status: 'REJECTED',
+                  managementStatus: 'REJECTED',
+                  reject_reason: '동아리 소개 정보가 부족합니다.',
+                  image_uri: 'https://cdn.allclear.com/temp/upload_234.jpg',
+                  created_at: '2026-04-02T11:00:00Z',
+                },
+                {
+                  uuid: '345a6789-a01d-34f5-c678-648836396222',
+                  name: '봉사동아리',
+                  status: 'PENDING',
+                  managementStatus: 'PENDING',
+                  image_uri: 'https://cdn.allclear.com/temp/upload_345.jpg',
+                  created_at: '2026-04-03T12:00:00Z',
+                },
+                {
+                  uuid: '456b7890-b12e-45f6-d789-759947407333',
                   name: '쿠킹마스터',
                   status: 'PENDING',
                   managementStatus: 'MANAGER_REQUEST_PENDING',
