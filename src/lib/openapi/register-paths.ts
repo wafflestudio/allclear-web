@@ -1486,12 +1486,13 @@ registry.registerPath({
             success: true,
             message: '관리 중인 동아리 목록 및 신청 현황 조회가 완료되었습니다.',
             data: {
-              total_count: 3,
+              total_count: 2,
               clubs: [
                 {
                   uuid: '123e4567-e89b-12d3-a456-426614174000',
                   name: '와플스튜디오',
                   status: 'APPROVED',
+                  managementStatus: 'APPROVED',
                   image_uri: 'https://cdn.allclear.com/temp/upload_123.jpg',
                   created_at: '2026-04-01T10:00:00Z',
                 },
@@ -1499,6 +1500,8 @@ registry.registerPath({
                   uuid: '234f5678-f90c-23e4-b567-537725285111',
                   name: '쿠킹마스터',
                   status: 'PENDING',
+                  managementStatus: 'MANAGER_REQUEST_PENDING',
+                  managerRequestId: 12,
                   image_uri: 'https://cdn.allclear.com/temp/upload_456.jpg',
                   created_at: '2026-04-03T14:30:00Z',
                 },

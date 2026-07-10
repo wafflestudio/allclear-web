@@ -9,7 +9,13 @@ import {
 } from '../infra/database/entities'
 import { ClubCategory } from '../domain/model/ClubCategory'
 import { CATEGORIES } from '../../src/fixtures/category'
-import { Club, ManagedClubDetail, ReviewKeyword, toClubDomain } from 'server/domain/model/Club'
+import {
+  Club,
+  ManagedClubDetail,
+  ManagedClubListItem,
+  ReviewKeyword,
+  toClubDomain,
+} from 'server/domain/model/Club'
 import { ClubReviewKeywordEntity } from '../infra/database/entities/club-review-keyword.entity'
 import { UserClubReviewEntity } from '../infra/database/entities/user-club-review.entity'
 import { groupBy, round, toPairs } from 'lodash-es'
@@ -36,6 +42,11 @@ import { ClubAccessService } from './club-access.service'
 
 type ClubUuid = string
 type ReviewKeywordId = string
+type ManagedClubListEntityItem = {
+  club: ClubEntity
+  managementStatus: ManagedClubListItem['managementStatus']
+  managerRequestId?: number
+}
 
 const CLUB_ENTITY_FIELD_TO_COLUMN: Record<string, string> = {
   name: 'name',
@@ -144,7 +155,7 @@ export class ClubService {
     return sortByPopularAndEachRandom(clubs)
   }
 
-  async findAllManagedByUser(serviceUserId: string): Promise<Club[]> {
+  async findAllManagedByUser(serviceUserId: string): Promise<ManagedClubListItem[]> {
     const [clubManagers, pendingManagerRequests] = await Promise.all([
       this.clubManagerRepository.find({
         where: {
@@ -192,37 +203,62 @@ export class ClubService {
       return Math.max(new Date(club.updatedAt).getTime(), latestRecruitmentUpdatedAt)
     }
 
-    const sortedApprovedManagedClubs = approvedManagedClubs.sort(
-      (a, b) => getRepresentativeUpdatedAt(b) - getRepresentativeUpdatedAt(a),
-    )
+    const sortedApprovedManagedClubItems: ManagedClubListEntityItem[] = approvedManagedClubs
+      .sort((a, b) => getRepresentativeUpdatedAt(b) - getRepresentativeUpdatedAt(a))
+      .map((club) => ({
+        club,
+        managementStatus: PUBLIC_CLUB_STATUS,
+      }))
     const rejectedManagedClubs = clubManagers
       .map((manager) => clubById.get(manager.clubId))
       .filter((club): club is ClubEntity => club?.status === REJECTED_CLUB_STATUS)
+      .map((club): ManagedClubListEntityItem => ({
+        club,
+        managementStatus: REJECTED_CLUB_STATUS,
+      }))
     const pendingManagedClubs = clubManagers
       .map((manager) => clubById.get(manager.clubId))
       .filter((club): club is ClubEntity => club?.status === PENDING_CLUB_STATUS)
+      .map((club): ManagedClubListEntityItem => ({
+        club,
+        managementStatus: PENDING_CLUB_STATUS,
+      }))
     const pendingManagerRequestClubs = pendingManagerRequests
       .filter((request) => !managerClubIdSet.has(request.clubId))
-      .map((request) => clubById.get(request.clubId))
-      .filter((club): club is ClubEntity => !!club)
+      .map((request): ManagedClubListEntityItem | null => {
+        const club = clubById.get(request.clubId)
+        if (!club) {
+          return null
+        }
+        return {
+          club,
+          managementStatus: 'MANAGER_REQUEST_PENDING',
+          managerRequestId: Number(request.id),
+        }
+      })
+      .filter((item): item is ManagedClubListEntityItem => !!item)
 
-    const orderedClubs = [
-      ...sortedApprovedManagedClubs,
+    const orderedItems = [
+      ...sortedApprovedManagedClubItems,
       ...rejectedManagedClubs,
       ...pendingManagedClubs,
       ...pendingManagerRequestClubs,
     ]
     const seenClubIds = new Set<string>()
 
-    return orderedClubs
-      .filter((club) => {
-        if (seenClubIds.has(club.uuid)) {
+    return orderedItems
+      .filter((item) => {
+        if (seenClubIds.has(item.club.uuid)) {
           return false
         }
-        seenClubIds.add(club.uuid)
+        seenClubIds.add(item.club.uuid)
         return true
       })
-      .map((it) => toClubDomain(it))
+      .map((item) => ({
+        ...toClubDomain(item.club),
+        managementStatus: item.managementStatus,
+        ...(item.managerRequestId !== undefined && { managerRequestId: item.managerRequestId }),
+      }))
   }
 
   private async findLatestRecruitmentUpdatedAtByClubId(
