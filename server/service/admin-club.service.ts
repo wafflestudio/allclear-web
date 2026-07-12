@@ -11,6 +11,7 @@ import { ClubManagerRegisterRequestEntity } from '../infra/database/entities/clu
 import { ClubVerificationRequestEntity } from '../infra/database/entities/club-verification-request.entity'
 import {
   UserNotificationEntity,
+  type UserNotificationMetadata,
   type UserNotificationType,
 } from '../infra/database/entities/user-notification.entity'
 import {
@@ -285,6 +286,7 @@ export class AdminClubService {
       if (shouldCreateNotification) {
         const clubManagers = await clubManagerRepository.findBy({ clubId: clubUuid })
         const serviceUserIds = Array.from(new Set(clubManagers.map((it) => it.serviceUserId)))
+        const metadata = this.getNotificationMetadata(notificationType, decision.reject_reason)
         if (serviceUserIds.length > 0) {
           await userNotificationRepository.insert(
             serviceUserIds.map((serviceUserId) => ({
@@ -293,6 +295,7 @@ export class AdminClubService {
               clubId: clubUuid,
               sourceType: 'CLUB',
               sourceId: clubUuid,
+              metadata,
             })),
           )
         }
@@ -575,12 +578,14 @@ export class AdminClubService {
       }
 
       if (shouldCreateNotification) {
+        const metadata = this.getNotificationMetadata(notificationType, decision.reject_reason)
         await userNotificationRepository.insert({
           serviceUserId: request.serviceUserId,
           type: notificationType,
           clubId: request.clubId,
           sourceType: 'CLUB_MANAGER_REQUEST',
           sourceId: request.id,
+          metadata,
         })
       }
 
@@ -619,6 +624,24 @@ export class AdminClubService {
 
   private getManagerRequestResultNotificationTypes(): UserNotificationType[] {
     return ['MANAGER_REQUEST_APPROVED', 'MANAGER_REQUEST_REJECTED']
+  }
+
+  private getNotificationMetadata(
+    type: UserNotificationType,
+    rejectReason?: string | null,
+  ): UserNotificationMetadata | null {
+    if (type !== 'CLUB_REGISTRATION_REJECTED' && type !== 'MANAGER_REQUEST_REJECTED') {
+      return null
+    }
+
+    const trimmedRejectReason = rejectReason?.trim()
+    if (!trimmedRejectReason) {
+      return null
+    }
+
+    return {
+      rejectReason: trimmedRejectReason,
+    }
   }
 
   async updateAdminClubVerificationRequestStatus(
