@@ -80,6 +80,11 @@ const ManagerRequestCard = ({
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base font-bold">{item.club_name}</h3>
               <StatusBadge status={item.status} />
+              {item.has_manager && (
+                <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700">
+                  현재 관리자 있음
+                </span>
+              )}
             </div>
             <p className="mt-2 text-sm text-slate-600">
               {item.applicant.name} · {item.applicant.phone} · {item.applicant.student_id}
