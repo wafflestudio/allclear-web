@@ -86,8 +86,12 @@ const ManagerRequestCard = ({
                 </span>
               )}
             </div>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-3 text-xs font-semibold text-slate-500">신청자</p>
+            <p className="mt-1 text-sm text-slate-600">
               {item.applicant.name} · {item.applicant.phone} · {item.applicant.student_id}
+            </p>
+            <p className="mt-1 break-all text-xs text-slate-400">
+              {item.applicant.service_user_id}
             </p>
             <p className="mt-2 text-xs text-slate-400">{formatDate(item.created_at)}</p>
           </div>
