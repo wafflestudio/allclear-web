@@ -144,7 +144,7 @@ const ManagerRequestCard = ({
                   </button>
                   <button
                     type="button"
-                    disabled={isMutating}
+                    disabled={isMutating || item.has_manager}
                     onClick={() =>
                       requestConfirm({ id: item.id, status: 'APPROVED' }, '승인 처리하시겠습니까?')
                     }
