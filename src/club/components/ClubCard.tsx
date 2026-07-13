@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { Club } from '../api'
 import { getCategoryTheme } from '../constants'
-import { openClubInApp } from '../openInApp'
+import { useSaveClub } from '../useSaveClub'
 import { ReviewKeywordPill } from './ReviewKeywordPill'
 
 type Props = {
@@ -17,6 +17,7 @@ const NO_REVIEW_THEME = { themeColor: '#CBCBCB', backgroundColor: 'rgba(193,193,
 // 앱 ClubCard와 동일: 높이 90, 로고 박스 90×90(테두리 0.5 테마색), 이미지 70×70
 export function ClubCard({ club, useCategoryTheme = false }: Props) {
   const theme = useCategoryTheme ? getCategoryTheme(club.category) : FALLBACK_THEME
+  const { isSaved, toggle } = useSaveClub(club)
 
   return (
     <div className="flex h-[90px] w-full">
@@ -65,12 +66,18 @@ export function ClubCard({ club, useCategoryTheme = false }: Props) {
       </Link>
       <button
         type="button"
-        onClick={() => openClubInApp(club.uuid)}
-        aria-label="동아리 저장 (앱에서 가능)"
+        onClick={toggle}
+        aria-label={isSaved ? '동아리 저장 해제' : '동아리 저장'}
         className="ml-1 self-start active:opacity-50"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/icons/heart.png" alt="" width={20} height={20} className="object-contain" />
+        <img
+          src={isSaved ? '/icons/heart-fill.png' : '/icons/heart.png'}
+          alt=""
+          width={20}
+          height={20}
+          className="object-contain"
+        />
       </button>
     </div>
   )

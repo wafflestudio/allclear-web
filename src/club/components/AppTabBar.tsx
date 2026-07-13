@@ -1,14 +1,13 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { openAppDeepLink } from '../openInApp'
 
 type TabKey = 'home' | 'explore' | 'saved' | 'mypage'
 
-const TABS: { key: TabKey; label: string; href?: string }[] = [
+const TABS: { key: TabKey; label: string; href: string }[] = [
   { key: 'home', label: '홈', href: '/club' },
   { key: 'explore', label: '탐색', href: '/search' },
-  { key: 'saved', label: '저장' },
-  { key: 'mypage', label: '마이' },
+  { key: 'saved', label: '저장', href: '/saved' },
+  { key: 'mypage', label: '마이', href: '/mypage' },
 ]
 
 type Props = {
@@ -16,7 +15,7 @@ type Props = {
 }
 
 // 앱 하단 탭바와 동일: 높이 86, bg #F3F0F5, 아이콘 22, 라벨 12/500, 활성 #874FFF
-// 저장/마이는 로그인이 필요하므로 앱으로 유도한다.
+// 저장/마이 페이지는 자체적으로 로그인 게이트를 띄운다 (앱의 tabPress requireLogin과 동일한 효과).
 export function AppTabBar({ active }: Props) {
   const router = useRouter()
 
@@ -26,20 +25,7 @@ export function AppTabBar({ active }: Props) {
         {TABS.map((tab) => {
           const isActive = tab.key === active
           const icon = `/icons/tab/${tab.key}-${isActive ? 'active' : 'default'}.png`
-          const content = (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={icon} alt="" width={22} height={22} className="mt-2.5 object-contain" />
-              <span
-                className={`mt-1 text-[12px] font-medium ${
-                  isActive ? 'text-[#874FFF]' : 'text-[#C1C1C1]'
-                }`}
-              >
-                {tab.label}
-              </span>
-            </>
-          )
-          return tab.href ? (
+          return (
             <Link
               key={tab.key}
               href={tab.href}
@@ -52,17 +38,16 @@ export function AppTabBar({ active }: Props) {
                 }
               }}
             >
-              {content}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={icon} alt="" width={22} height={22} className="mt-2.5 object-contain" />
+              <span
+                className={`mt-1 text-[12px] font-medium ${
+                  isActive ? 'text-[#874FFF]' : 'text-[#C1C1C1]'
+                }`}
+              >
+                {tab.label}
+              </span>
             </Link>
-          ) : (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => openAppDeepLink()}
-              className="flex flex-1 flex-col items-center active:opacity-60"
-            >
-              {content}
-            </button>
           )
         })}
       </div>

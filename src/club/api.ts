@@ -104,6 +104,38 @@ export function buildSearchParams(query: string, filters: ClubSearchFilters): UR
   return params
 }
 
+export type ReviewKeyword = {
+  id: string
+  title: string
+  color: string
+  iconUri: string
+}
+
+export type ReviewKeywordCategory = {
+  id: number
+  title: string
+  color: string
+  keywords: ReviewKeyword[]
+}
+
+export function useReviewKeywordCategories() {
+  return useQuery(
+    ['reviewKeywords'],
+    () =>
+      fetchJson<{ categories: ReviewKeywordCategory[]; totalSize: number }>(
+        '/api/v2/clubs/reviews/keywords',
+      ),
+    { staleTime: Infinity, select: (data) => data.categories },
+  )
+}
+
+export function useClub(uuid: string | undefined) {
+  return useQuery(['clubs', uuid], () => fetchJson<Club>(`/api/v2/clubs/${uuid}`), {
+    enabled: !!uuid,
+    staleTime: Infinity,
+  })
+}
+
 export function useSearchClubs(query: string, filters: ClubSearchFilters) {
   const params = buildSearchParams(query, filters)
   return useQuery(

@@ -1,15 +1,15 @@
 import type { Club } from '../../../server/domain/model/Club'
 import { getCategoryTheme } from '../constants'
-import { openClubInApp } from '../openInApp'
 import { BackgroundCard } from './BackgroundCard'
 import { MdiIcon } from './icons'
 import { ReviewKeywordBar } from './ReviewKeywordBar'
 
 type Props = {
   club: Club
+  onWriteReview: () => void
 }
 
-export function ReviewTab({ club }: Props) {
+export function ReviewTab({ club, onWriteReview }: Props) {
   const theme = getCategoryTheme(club.category)
   const sortedKeywords = [...club.reviewKeywords].sort((a, b) => b.totalUpvotes - a.totalUpvotes)
 
@@ -49,7 +49,7 @@ export function ReviewTab({ club }: Props) {
 
       <button
         type="button"
-        onClick={() => openClubInApp(club.uuid)}
+        onClick={onWriteReview}
         className="mt-1 flex w-full items-center justify-between rounded-2xl bg-white p-4 text-left shadow-[0_2px_8px_rgba(0,0,0,0.06)] active:bg-[#F3F0F5]"
       >
         <span className="flex flex-col">

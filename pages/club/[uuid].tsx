@@ -1,5 +1,6 @@
 import { GetServerSideProps } from 'next'
 import Head from 'next/head'
+import { useRouter } from 'next/router'
 import { useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 import { z } from 'zod'
@@ -17,16 +18,25 @@ import { RecruitTab } from '../../src/club/components/RecruitTab'
 import { ReviewKeywordPill } from '../../src/club/components/ReviewKeywordPill'
 import { ReviewTab } from '../../src/club/components/ReviewTab'
 import { getCategoryTheme } from '../../src/club/constants'
+import { useRequireLogin } from '../../src/club/auth/AuthContext'
 import { openClubInApp } from '../../src/club/openInApp'
+import { useSaveClub } from '../../src/club/useSaveClub'
 
 type Props = {
   club: Club
 }
 
 const ClubDetailPage = ({ club }: Props) => {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<ClubTabKey>('detail')
   const tabBarRef = useRef<HTMLDivElement>(null)
   const theme = getCategoryTheme(club.category)
+  const { isSaved, toggle: toggleSave } = useSaveClub(club)
+  const requireLogin = useRequireLogin()
+
+  const handleWriteReview = () => {
+    requireLogin(() => router.push(`/club/${club.uuid}/review`))
+  }
 
   const handleShare = async () => {
     const url = window.location.href
@@ -90,13 +100,13 @@ const ClubDetailPage = ({ club }: Props) => {
                 <div className="ml-3 flex shrink-0 items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => openClubInApp(club.uuid)}
-                    aria-label="동아리 저장 (앱에서 가능)"
+                    onClick={toggleSave}
+                    aria-label={isSaved ? '동아리 저장 해제' : '동아리 저장'}
                     className="active:opacity-50"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src="/icons/heart.png"
+                      src={isSaved ? '/icons/heart-fill.png' : '/icons/heart.png'}
                       alt=""
                       width={22}
                       height={22}
@@ -138,7 +148,7 @@ const ClubDetailPage = ({ club }: Props) => {
           <div className="px-4">
             {activeTab === 'detail' && <InfoTab club={club} />}
             {activeTab === 'recruit' && <RecruitTab club={club} />}
-            {activeTab === 'review' && <ReviewTab club={club} />}
+            {activeTab === 'review' && <ReviewTab club={club} onWriteReview={handleWriteReview} />}
           </div>
         </main>
 
