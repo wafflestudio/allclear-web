@@ -1,17 +1,15 @@
-import type { V1Club } from '../../../server/service/v1/club.service'
+import type { Club } from '../../../server/domain/model/Club'
 import { getCategoryTheme } from '../constants'
 import { openClubInApp } from '../openInApp'
-import { AppGateOverlay } from './AppGateOverlay'
 import { BackgroundCard } from './BackgroundCard'
 import { MdiIcon } from './icons'
 import { ReviewKeywordBar } from './ReviewKeywordBar'
 
 type Props = {
-  club: V1Club
-  gated: boolean
+  club: Club
 }
 
-export function ReviewTab({ club, gated }: Props) {
+export function ReviewTab({ club }: Props) {
   const theme = getCategoryTheme(club.category)
   const sortedKeywords = [...club.reviewKeywords].sort((a, b) => b.totalUpvotes - a.totalUpvotes)
 
@@ -47,7 +45,6 @@ export function ReviewTab({ club, gated }: Props) {
             </p>
           </div>
         )}
-        {gated && <AppGateOverlay clubName={club.name} tabLabel="활동후기" uuid={club.uuid} />}
       </BackgroundCard>
 
       <button
