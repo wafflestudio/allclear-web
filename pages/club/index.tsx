@@ -19,10 +19,15 @@ const ClubHomePage = () => {
         <meta name="description" content="스랖 에타 eTL 올클 렛츠고 🥳" />
       </Head>
 
-      <div className="min-h-screen bg-[#FAFAFA] font-pretendard text-[#202020]">
-        <main className="mx-auto flex w-full max-w-[480px] flex-col items-center pb-[110px] pt-8">
+      {/* 앱 홈과 동일하게 뷰포트에 꽉 차는 고정 화면 (페이지 스크롤 없음).
+          섹션 사이 여백은 화면이 낮으면 min까지 줄어들고, 그래도 넘치면 내부 스크롤로 폴백. */}
+      <div
+        className="h-screen bg-[#FAFAFA] font-pretendard text-[#202020]"
+        style={{ height: '100dvh' }}
+      >
+        <main className="scrollbar-hide mx-auto flex h-full w-full max-w-[480px] flex-col items-center overflow-y-auto pt-8">
           {/* 상단 헤더 */}
-          <div className="mb-10 w-full px-[18px]">
+          <div className="w-full shrink-0 px-[18px]">
             <div className="ml-1">
               <p className="text-[12px] font-medium text-[#202020]">서울대 모든 동아리</p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -36,8 +41,10 @@ const ClubHomePage = () => {
             </div>
           </div>
 
+          <div className="h-10 min-h-[24px] w-full shrink" />
+
           {/* 카테고리 섹션 */}
-          <div className="mb-[30px] w-full px-[18px]">
+          <div className="w-full shrink-0 px-[18px]">
             <h2 className="mb-4 ml-1 text-[20px] font-semibold leading-6 text-[#757474]">
               어떤 동아리든 올클과 함께 찾아봐요
             </h2>
@@ -71,8 +78,10 @@ const ClubHomePage = () => {
             </div>
           </div>
 
+          <div className="h-[30px] min-h-[16px] w-full shrink" />
+
           {/* 최신 공고 섹션 */}
-          <div className="w-full">
+          <div className="w-full shrink-0">
             <h2 className="mb-4 ml-5 text-[20px] font-semibold leading-6 text-[#757474]">
               새로운 공고가 올라왔어요
             </h2>
@@ -96,6 +105,9 @@ const ClubHomePage = () => {
               </HorizontalCarousel>
             )}
           </div>
+
+          {/* 하단 탭바(86px) 클리어런스 — 내부 스크롤 시에도 카드가 탭바에 가리지 않게 유지 */}
+          <div className="h-[110px] min-h-[90px] w-full shrink" />
         </main>
 
         <AppTabBar active="home" />
