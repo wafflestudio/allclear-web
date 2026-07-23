@@ -63,6 +63,7 @@ export type AdminClubDetail = {
     dongbang_location: string
     sns: string
     introduction: string | null
+    activity_image_urls: string[]
     created_at: string
     reject_reason: string | null
   }
@@ -225,6 +226,7 @@ export class AdminClubService {
         dongbang_location: club.dongbangLocation,
         sns: club.sns,
         introduction: club.introduction,
+        activity_image_urls: club.activityImageUrls ?? [],
         created_at: club.createdAt,
         reject_reason: club.rejectReason,
       },

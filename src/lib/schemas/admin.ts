@@ -77,6 +77,7 @@ const AdminClubDetailClubSchema = z
     dongbang_location: z.string(),
     sns: z.string(),
     introduction: z.string().nullable(),
+    activity_image_urls: z.array(z.string().url()).max(5),
     created_at: z.string(),
     reject_reason: z.string().nullable(),
   })

@@ -31,6 +31,8 @@ const OptionalUrlStringSchema = z.preprocess(
   z.string().trim().url().optional(),
 )
 
+const ActivityImageUrlsSchema = z.array(z.string().trim().url()).max(5).optional()
+
 export const ManagerClubParamsSchema = z
   .object({
     serviceUserId: z.string().uuid(),
@@ -97,6 +99,7 @@ const ClubDataSchema = z.object({
   dongbang_location: z.string().trim().optional(),
   sns: z.string().trim().url(),
   introduction: z.string().trim().nonempty(),
+  activity_image_urls: ActivityImageUrlsSchema,
 })
 
 export type ClubData = z.infer<typeof ClubDataSchema>
@@ -161,6 +164,12 @@ export const ClubImageUploadSchema = z
     }),
   })
   .openapi('ClubImageUpload')
+
+export const ClubActivityImageUploadResponseSchema = z
+  .object({
+    url: z.string().url(),
+  })
+  .openapi('ClubActivityImageUploadResponse')
 
 export const CreateVerificationRequestResponseSchema = z
   .object({

@@ -46,6 +46,7 @@ import {
 } from 'src/lib/schemas/club-recruitments'
 import {
   ClubImageUploadSchema,
+  ClubActivityImageUploadResponseSchema,
   ClubRegisterRequestSchema,
   ClubRegisterResponseSchema,
   ClubManagerRequestSchema,
@@ -1938,6 +1939,44 @@ registry.registerPath({
       },
     },
     400: validationErrorResponse,
+    404: notFoundResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'post',
+  path: '/api/v2/managers/me/clubs/{uuid}/activity-images',
+  tags: ['Managers'],
+  summary: '동아리 활동 사진 업로드',
+  description:
+    '동아리 관리자가 상세 정보에 첨부할 활동 사진을 한 장 업로드합니다. 반환된 url은 동아리 등록 또는 수정 시 activity_image_urls에 포함하며, 동아리당 최대 5개까지 저장할 수 있습니다.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: ClubUuidParamsSchema,
+    body: {
+      content: {
+        'multipart/form-data': {
+          schema: ClubImageUploadSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: '업로드 성공',
+      content: {
+        'application/json': {
+          schema: ClubActivityImageUploadResponseSchema,
+          example: {
+            url: 'https://cdn.all-clear.cc/club%2Fxxxx-xxxx-xxxx.jpg',
+          },
+        },
+      },
+    },
+    400: validationErrorResponse,
+    401: unauthorizedResponse,
+    403: forbiddenResponse,
     404: notFoundResponse,
     500: internalServerErrorResponse,
   },

@@ -1,0 +1,65 @@
+import { describe, expect, it } from 'vitest'
+import { ClubRegisterRequestSchema, ManagedClubPatchSchema } from './managers'
+
+const validClubData = {
+  name: '와플스튜디오',
+  type: '교내' as const,
+  category: '학술' as const,
+  affiliation: '컴퓨터공학부',
+  short_description: '웹/앱 개발 동아리',
+  recruit_type: '정기' as const,
+  min_activity_period: 2,
+  has_dongbang: true,
+  dongbang_location: '301동',
+  sns: 'https://wafflestudio.com',
+  sns_urls: ['https://instagram.com/wafflestudio', 'https://youtube.com/@wafflestudio'],
+  introduction: '서비스를 만드는 동아리입니다.',
+  founded_at: '2012-02-03',
+  active_member_count: 24,
+  activity_image_urls: ['https://cdn.all-clear.cc/activity-1.jpg'],
+}
+
+describe('manager club information schemas', () => {
+  it('does not collect founded date or active member count during registration', () => {
+    const parsed = ClubRegisterRequestSchema.parse({
+      club_data: validClubData,
+      manager_data: {
+        name: '관리자',
+        phone: '01012345678',
+        student_id: '2020-12345',
+      },
+    })
+
+    expect(parsed.club_data).not.toHaveProperty('founded_at')
+    expect(parsed.club_data).not.toHaveProperty('active_member_count')
+    expect(parsed.club_data.sns).toBe(validClubData.sns)
+    expect(parsed.club_data).not.toHaveProperty('sns_urls')
+    expect(parsed.club_data.activity_image_urls).toEqual(validClubData.activity_image_urls)
+  })
+
+  it('keeps a single SNS URL and does not collect removed fields in manager patches', () => {
+    const parsed = ManagedClubPatchSchema.parse({
+      founded_at: null,
+      active_member_count: 0,
+      sns: 'https://instagram.com/wafflestudio',
+      sns_urls: ['https://youtube.com/@wafflestudio'],
+      activity_image_urls: [],
+    })
+
+    expect(parsed).toEqual({
+      sns: 'https://instagram.com/wafflestudio',
+      activity_image_urls: [],
+    })
+  })
+
+  it('rejects more than five activity image URLs', () => {
+    expect(() =>
+      ManagedClubPatchSchema.parse({
+        activity_image_urls: Array.from(
+          { length: 6 },
+          (_, index) => `https://example.com/activity-${index}.jpg`,
+        ),
+      }),
+    ).toThrow()
+  })
+})
