@@ -208,7 +208,6 @@ const clubRegisterRequestExample = {
     min_activity_period: 1,
     has_dongbang: true,
     dongbang_location: '63동 619호',
-    sns: 'https://www.instagram.com/wafflestudio_official/',
     sns_urls: [
       'https://www.instagram.com/wafflestudio_official/',
       'https://www.youtube.com/@wafflestudio',
@@ -250,7 +249,6 @@ const clubRegisterResponseExample = {
       minActivityPeriod: 1,
       activeMemberCount: 0,
       membershipFee: '',
-      sns: 'https://www.instagram.com/wafflestudio_official/',
       snsUrls: [
         'https://www.instagram.com/wafflestudio_official/',
         'https://www.youtube.com/@wafflestudio',
@@ -382,7 +380,6 @@ const adminClubDetailResponseExample = {
       min_activity_period: 1,
       has_dongbang: true,
       dongbang_location: '63동 619호',
-      sns: 'https://www.instagram.com/wafflestudio_official/',
       sns_urls: [
         'https://www.instagram.com/wafflestudio_official/',
         'https://www.youtube.com/@wafflestudio',
@@ -423,13 +420,13 @@ const adminClubHistoriesResponseExample = {
           service_user_id: '417bdb60-c70c-4dfa-bfd4-a5a55a0ae001',
           name: '홍길동',
         },
-        changed_fields: ['short_description', 'sns'],
+        changed_fields: ['short_description', 'sns_urls'],
         before_data: {
           uuid: '123e4567-e89b-12d3-a456-426614174000',
           name: '와플스튜디오',
           short_description: '개발 동아리',
           category: '진로',
-          sns: 'https://old-link.com',
+          sns_urls: ['https://old-link.com'],
           affiliation_type: '소속동아리',
           college_major_id: 36,
           has_dongbang: true,
@@ -441,7 +438,7 @@ const adminClubHistoriesResponseExample = {
           name: '와플스튜디오',
           short_description: '서울대 최대 규모 개발 동아리',
           category: '진로',
-          sns: 'https://new-link.com',
+          sns_urls: ['https://new-link.com'],
           affiliation_type: '소속동아리',
           college_major_id: 36,
           has_dongbang: true,
@@ -1772,7 +1769,6 @@ registry.registerPath({
             min_activity_period: 2,
             has_dongbang: true,
             dongbang_location: '301동 3층',
-            sns: 'https://wafflestudio.com',
             sns_urls: [
               'https://www.instagram.com/wafflestudio_official/',
               'https://www.youtube.com/@wafflestudio',

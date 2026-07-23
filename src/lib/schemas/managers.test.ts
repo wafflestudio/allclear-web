@@ -11,7 +11,6 @@ const validClubData = {
   min_activity_period: 2,
   has_dongbang: true,
   dongbang_location: '301동',
-  sns: 'https://wafflestudio.com',
   sns_urls: ['https://instagram.com/wafflestudio', 'https://youtube.com/@wafflestudio'],
   introduction: '서비스를 만드는 동아리입니다.',
   founded_at: '2012-02-03',
@@ -32,7 +31,7 @@ describe('manager club information schemas', () => {
 
     expect(parsed.club_data).not.toHaveProperty('founded_at')
     expect(parsed.club_data).not.toHaveProperty('active_member_count')
-    expect(parsed.club_data.sns).toBe(validClubData.sns)
+    expect(parsed.club_data).not.toHaveProperty('sns')
     expect(parsed.club_data.sns_urls).toEqual(validClubData.sns_urls)
     expect(parsed.club_data.activity_image_urls).toEqual(validClubData.activity_image_urls)
   })
@@ -41,7 +40,6 @@ describe('manager club information schemas', () => {
     const parsed = ManagedClubPatchSchema.parse({
       founded_at: null,
       active_member_count: 0,
-      sns: 'https://instagram.com/wafflestudio',
       sns_urls: [
         'https://instagram.com/wafflestudio',
         'https://youtube.com/@wafflestudio',
@@ -51,7 +49,6 @@ describe('manager club information schemas', () => {
     })
 
     expect(parsed).toEqual({
-      sns: 'https://instagram.com/wafflestudio',
       sns_urls: [
         'https://instagram.com/wafflestudio',
         'https://youtube.com/@wafflestudio',
@@ -65,6 +62,23 @@ describe('manager club information schemas', () => {
     expect(() =>
       ManagedClubPatchSchema.parse({
         sns_urls: Array.from({ length: 4 }, (_, index) => `https://example.com/social-${index}`),
+      }),
+    ).toThrow()
+  })
+
+  it('rejects registration requests that only provide the legacy SNS field', () => {
+    expect(() =>
+      ClubRegisterRequestSchema.parse({
+        club_data: {
+          ...validClubData,
+          sns_urls: undefined,
+          sns: 'https://instagram.com/wafflestudio',
+        },
+        manager_data: {
+          name: '관리자',
+          phone: '01012345678',
+          student_id: '2020-12345',
+        },
       }),
     ).toThrow()
   })

@@ -61,7 +61,6 @@ export type AdminClubDetail = {
     min_activity_period: number
     has_dongbang: boolean
     dongbang_location: string
-    sns: string
     sns_urls: string[]
     introduction: string | null
     activity_image_urls: string[]
@@ -225,8 +224,7 @@ export class AdminClubService {
         min_activity_period: club.minActivityPeriod,
         has_dongbang: club.hasDongbang,
         dongbang_location: club.dongbangLocation,
-        sns: club.sns,
-        sns_urls: club.snsUrls?.length > 0 ? club.snsUrls : club.sns ? [club.sns] : [],
+        sns_urls: club.snsUrls ?? [],
         introduction: club.introduction,
         activity_image_urls: club.activityImageUrls ?? [],
         created_at: club.createdAt,

@@ -40,7 +40,6 @@ import type {
 import { CollegeMajorEntity } from '../infra/database/entities/college-major.entity'
 import { ClubAccessService } from './club-access.service'
 import { getClubResubmissionStatusPatch } from './club-registration-status'
-import { getClubSnsPatch } from './club-sns'
 
 type ClubUuid = string
 type ReviewKeywordId = string
@@ -62,7 +61,6 @@ const CLUB_ENTITY_FIELD_TO_COLUMN: Record<string, string> = {
   dongbangLocation: 'dongbang_location',
   affiliationType: 'affiliation_type',
   collegeMajorId: 'college_major_id',
-  sns: 'sns',
   snsUrls: 'sns_urls',
   activityImageUrls: 'activity_image_urls',
   introduction: 'introduction',
@@ -695,7 +693,9 @@ export class ClubService {
     if (body.dongbang_location !== undefined) {
       patch.dongbangLocation = body.dongbang_location
     }
-    Object.assign(patch, getClubSnsPatch(body))
+    if (body.sns_urls !== undefined) {
+      patch.snsUrls = body.sns_urls
+    }
     if (body.introduction !== undefined) {
       patch.introduction = body.introduction
     }
@@ -734,7 +734,6 @@ export class ClubService {
       recruit_type: club.recruitType,
       is_official_verified: club.isOfficialVerified,
       verified_at: club.verifiedAt,
-      sns: club.sns,
       sns_urls: club.snsUrls,
       activity_image_urls: club.activityImageUrls,
       introduction: club.introduction,

@@ -132,7 +132,6 @@ export const ClubSchema = z
     activeMemberCount: z.number().int(),
     foundedAt: z.string().nullable(),
     membershipFee: z.string(),
-    sns: z.string(),
     snsUrls: z.array(z.string().url()).max(3),
     activityImageUrls: z.array(z.string()),
     tags: z.array(z.string()),

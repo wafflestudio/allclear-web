@@ -61,7 +61,6 @@ export type Club = {
   activeMemberCount: number
   foundedAt: string | null
   membershipFee: string
-  sns: string
   snsUrls: string[]
   activityImageUrls: string[]
   tags: string[]
@@ -116,8 +115,7 @@ export const toClubDomain = (
   activeMemberCount: it.activeMemberCount ?? 0,
   foundedAt: it.foundedAt ?? null,
   membershipFee: it.membershipFee ?? '',
-  sns: it.sns ?? '',
-  snsUrls: it.snsUrls?.length > 0 ? it.snsUrls : it.sns ? [it.sns] : [],
+  snsUrls: it.snsUrls ?? [],
   activityImageUrls: it.activityImageUrls ?? [],
   tags: it.tags,
   imageUri: encode(it.imageUri) || ENV.R2.DEFAULT_CLUB_IMAGE,

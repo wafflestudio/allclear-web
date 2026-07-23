@@ -75,7 +75,6 @@ const AdminClubDetailClubSchema = z
     min_activity_period: z.number().int(),
     has_dongbang: z.boolean(),
     dongbang_location: z.string(),
-    sns: z.string(),
     sns_urls: z.array(z.string().url()).max(3),
     introduction: z.string().nullable(),
     activity_image_urls: z.array(z.string().url()).max(5),

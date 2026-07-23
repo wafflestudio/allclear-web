@@ -91,9 +91,6 @@ export class ClubEntity extends ClubTimeStampMixin {
   @Column({ type: 'timestamp without time zone', nullable: true, name: 'verified_at' })
   verifiedAt: string | null
 
-  @Column({ type: 'varchar', default: '', name: 'sns' })
-  sns: string
-
   @Column({ type: 'jsonb', default: () => "'[]'::jsonb", name: 'sns_urls' })
   snsUrls: string[]
 
