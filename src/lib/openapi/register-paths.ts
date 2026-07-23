@@ -209,6 +209,10 @@ const clubRegisterRequestExample = {
     has_dongbang: true,
     dongbang_location: '63동 619호',
     sns: 'https://www.instagram.com/wafflestudio_official/',
+    sns_urls: [
+      'https://www.instagram.com/wafflestudio_official/',
+      'https://www.youtube.com/@wafflestudio',
+    ],
     introduction: '동아리 소개글',
   },
   manager_data: {
@@ -247,6 +251,10 @@ const clubRegisterResponseExample = {
       activeMemberCount: 0,
       membershipFee: '',
       sns: 'https://www.instagram.com/wafflestudio_official/',
+      snsUrls: [
+        'https://www.instagram.com/wafflestudio_official/',
+        'https://www.youtube.com/@wafflestudio',
+      ],
       tags: [],
       imageUri: 'https://cdn.all-clear.cc/default.png',
       blurHash: null,
@@ -375,6 +383,10 @@ const adminClubDetailResponseExample = {
       has_dongbang: true,
       dongbang_location: '63동 619호',
       sns: 'https://www.instagram.com/wafflestudio_official/',
+      sns_urls: [
+        'https://www.instagram.com/wafflestudio_official/',
+        'https://www.youtube.com/@wafflestudio',
+      ],
       introduction: '동아리 소개글',
       created_at: '2026-04-01T10:00:00Z',
     },
@@ -1761,6 +1773,10 @@ registry.registerPath({
             has_dongbang: true,
             dongbang_location: '301동 3층',
             sns: 'https://wafflestudio.com',
+            sns_urls: [
+              'https://www.instagram.com/wafflestudio_official/',
+              'https://www.youtube.com/@wafflestudio',
+            ],
           },
         },
       },

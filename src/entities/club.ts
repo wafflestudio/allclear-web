@@ -31,6 +31,7 @@ export type Club = {
   activeMemberCount: number
   membershipFee: string
   sns: string
+  snsUrls: string[]
   tags: string[]
   imageUri: string
   article: string

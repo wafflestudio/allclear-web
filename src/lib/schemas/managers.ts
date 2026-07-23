@@ -31,6 +31,7 @@ const OptionalUrlStringSchema = z.preprocess(
   z.string().trim().url().optional(),
 )
 
+const SnsUrlsSchema = z.array(z.string().trim().url()).min(1).max(3).optional()
 const ActivityImageUrlsSchema = z.array(z.string().trim().url()).max(5).optional()
 
 export const ManagerClubParamsSchema = z
@@ -98,6 +99,7 @@ const ClubDataSchema = z.object({
   has_dongbang: z.boolean(),
   dongbang_location: z.string().trim().optional(),
   sns: z.string().trim().url(),
+  sns_urls: SnsUrlsSchema,
   introduction: z.string().trim().nonempty(),
   activity_image_urls: ActivityImageUrlsSchema,
 })

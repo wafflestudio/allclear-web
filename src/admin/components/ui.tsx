@@ -363,7 +363,30 @@ export const ClubDetailModal = ({
                           : '없음'
                       }
                     />
-                    <DetailItem label="SNS" value={detail.club_data.sns || '-'} wide />
+                    <DetailItem
+                      label="SNS"
+                      value={
+                        detail.club_data.sns_urls.length > 0 ? (
+                          <ul className="space-y-1">
+                            {detail.club_data.sns_urls.map((url) => (
+                              <li key={url}>
+                                <a
+                                  href={url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-primary-700 underline"
+                                >
+                                  {url}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          '-'
+                        )
+                      }
+                      wide
+                    />
                     <DetailItem label="소개" value={detail.club_data.introduction ?? '-'} wide />
                   </dl>
                 </div>

@@ -21,6 +21,7 @@ describe('admin club detail schema', () => {
           has_dongbang: true,
           dongbang_location: '301동',
           sns: 'https://instagram.com/wafflestudio',
+          sns_urls: ['https://instagram.com/wafflestudio', 'https://youtube.com/@wafflestudio'],
           introduction: '서비스를 만드는 동아리입니다.',
           activity_image_urls: ['https://cdn.all-clear.cc/activity-1.jpg'],
           created_at: '2026-07-23T00:00:00.000Z',
@@ -37,6 +38,10 @@ describe('admin club detail schema', () => {
 
     expect(parsed.data.club_data.activity_image_urls).toEqual([
       'https://cdn.all-clear.cc/activity-1.jpg',
+    ])
+    expect(parsed.data.club_data.sns_urls).toEqual([
+      'https://instagram.com/wafflestudio',
+      'https://youtube.com/@wafflestudio',
     ])
   })
 })

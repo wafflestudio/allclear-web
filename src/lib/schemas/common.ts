@@ -133,6 +133,7 @@ export const ClubSchema = z
     foundedAt: z.string().nullable(),
     membershipFee: z.string(),
     sns: z.string(),
+    snsUrls: z.array(z.string().url()).max(3),
     activityImageUrls: z.array(z.string()),
     tags: z.array(z.string()),
     imageUri: z.string(),
