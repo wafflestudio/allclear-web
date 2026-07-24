@@ -634,6 +634,7 @@ export class ClubService {
       const clubRepository = manager.getRepository(ClubEntity)
       const clubManagerRepository = manager.getRepository(ClubManagerEntity)
       const clubHistoryRepository = manager.getRepository(ClubHistoryEntity)
+      const userNotificationRepository = manager.getRepository(UserNotificationEntity)
 
       const club = await clubRepository.findOneBy({
         uuid: clubUuid,
@@ -656,7 +657,8 @@ export class ClubService {
         ...patch,
         ...statusPatch,
       }
-      const beforeData = this.toClubHistoryData(club)
+      const shouldRecordHistory = club.status === PUBLIC_CLUB_STATUS
+      const beforeData = shouldRecordHistory ? this.toClubHistoryData(club) : null
       await clubRepository.update(
         {
           uuid: clubUuid,
@@ -665,22 +667,32 @@ export class ClubService {
         patchWithStatus,
       )
 
+      if (club.status === REJECTED_CLUB_STATUS) {
+        await userNotificationRepository.delete({
+          sourceType: 'CLUB',
+          sourceId: clubUuid,
+          type: 'CLUB_REGISTRATION_REJECTED',
+        })
+      }
+
       const updatedClub = await clubRepository.findOneByOrFail({
         uuid: clubUuid,
         deletedAt: IsNull(),
       })
-      const afterData = this.toClubHistoryData(updatedClub)
-      const changedFields = Object.keys(patchWithStatus)
-        .map((key) => CLUB_ENTITY_FIELD_TO_COLUMN[key] ?? key)
-        .filter((key) => beforeData[key] !== afterData[key])
+      if (shouldRecordHistory && beforeData) {
+        const afterData = this.toClubHistoryData(updatedClub)
+        const changedFields = Object.keys(patchWithStatus)
+          .map((key) => CLUB_ENTITY_FIELD_TO_COLUMN[key] ?? key)
+          .filter((key) => beforeData[key] !== afterData[key])
 
-      await clubHistoryRepository.insert({
-        clubId: clubUuid,
-        serviceUserId,
-        beforeData: beforeData as any,
-        afterData: afterData as any,
-        changedFields,
-      })
+        await clubHistoryRepository.insert({
+          clubId: clubUuid,
+          serviceUserId,
+          beforeData: beforeData as any,
+          afterData: afterData as any,
+          changedFields,
+        })
+      }
 
       return {
         clubUuid,

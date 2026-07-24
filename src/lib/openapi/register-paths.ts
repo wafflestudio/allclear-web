@@ -1826,7 +1826,7 @@ registry.registerPath({
   tags: ['Managers'],
   summary: '관리 중인 동아리 수정',
   description:
-    '동아리 관리자가 본인 동아리 정보를 수정합니다. 요청에 포함된 필드만 반영하며 수정 전후 스냅샷은 club_history에 기록됩니다.',
+    '동아리 관리자가 본인 동아리 정보를 수정합니다. 요청에 포함된 필드만 반영합니다. APPROVED 상태의 동아리 수정만 수정 전후 스냅샷을 club_history에 기록하며, PENDING 또는 REJECTED 상태에서는 이력을 기록하지 않습니다. REJECTED 상태의 동아리를 수정하면 신규 동아리 등록 재신청으로 처리되어 상태가 PENDING으로 변경되고 rejectReason이 초기화되며 기존 CLUB_REGISTRATION_REJECTED 알림이 삭제됩니다.',
   security: [{ bearerAuth: [] }],
   request: {
     params: ClubUuidParamsSchema,
