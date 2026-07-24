@@ -1882,6 +1882,28 @@ registry.registerPath({
 
 registry.registerPath({
   method: 'delete',
+  path: '/api/v2/managers/me/clubs/{uuid}',
+  tags: ['Managers'],
+  summary: '신규 동아리 등록 신청 삭제',
+  description:
+    '동아리 관리자가 본인이 등록한 PENDING 또는 REJECTED 상태의 동아리를 삭제합니다. 동아리와 해당 동아리의 모든 관리자 관계는 soft delete하며, 기존 신규 동아리 승인/반려 알림도 함께 삭제합니다. APPROVED 상태의 동아리는 삭제할 수 없습니다.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: ClubUuidParamsSchema,
+  },
+  responses: {
+    204: NoContentResponse,
+    400: validationErrorResponse,
+    401: unauthorizedResponse,
+    403: forbiddenResponse,
+    404: notFoundResponse,
+    409: conflictResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'delete',
   path: '/api/v2/managers/me/recruitments/{recruitmentId}',
   tags: ['Managers'],
   summary: '모집공고 삭제',

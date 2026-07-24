@@ -701,6 +701,46 @@ export class ClubService {
     })
   }
 
+  async deleteManagedClub(clubUuid: string, serviceUserId: string): Promise<void> {
+    await this.clubRepository.manager.transaction(async (manager) => {
+      const clubRepository = manager.getRepository(ClubEntity)
+      const clubManagerRepository = manager.getRepository(ClubManagerEntity)
+      const userNotificationRepository = manager.getRepository(UserNotificationEntity)
+
+      const club = await clubRepository.findOneBy({
+        uuid: clubUuid,
+        deletedAt: IsNull(),
+      })
+      if (!club) {
+        throw new NotFoundError('club not found')
+      }
+
+      const clubManager = await clubManagerRepository.findOneBy({
+        clubId: clubUuid,
+        serviceUserId,
+      })
+      if (!clubManager) {
+        throw new ForbiddenError('club manager permission required')
+      }
+
+      if (club.status !== PENDING_CLUB_STATUS && club.status !== REJECTED_CLUB_STATUS) {
+        throw new ConflictError('only pending or rejected clubs can be deleted')
+      }
+
+      await userNotificationRepository.delete({
+        sourceType: 'CLUB',
+        sourceId: clubUuid,
+        type: In(['CLUB_REGISTRATION_APPROVED', 'CLUB_REGISTRATION_REJECTED']),
+      })
+      await clubManagerRepository.softDelete({
+        clubId: clubUuid,
+      })
+      await clubRepository.softDelete({
+        uuid: clubUuid,
+      })
+    })
+  }
+
   private async buildClubPatchFromClubData(body: Partial<ClubData>): Promise<Partial<ClubEntity>> {
     const patch: Partial<ClubEntity> = {}
 
