@@ -1628,6 +1628,9 @@ registry.registerPath({
   path: '/api/v2/managers/me/clubs',
   tags: ['Managers'],
   summary: '동아리 관리자 등록 요청',
+  description:
+    '삭제 예정인 API입니다. 동아리 관리 권한 신청에는 POST /api/v2/clubs/{uuid}/manager-requests를 사용해 주세요.',
+  deprecated: true,
   security: [{ bearerAuth: [] }],
   request: {
     body: {
