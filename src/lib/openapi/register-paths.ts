@@ -1101,6 +1101,26 @@ registry.registerPath({
 })
 
 registry.registerPath({
+  method: 'delete',
+  path: '/api/v2/clubs/{uuid}/manager-requests',
+  tags: ['Clubs'],
+  summary: '동아리 관리 권한 신청 취소',
+  description:
+    '로그인한 사용자가 해당 동아리에 제출한 PENDING 또는 REJECTED 상태의 관리자 권한 신청을 삭제합니다. 연결된 관리자 권한 신청 반려 알림도 함께 삭제됩니다. APPROVED 상태의 신청과 실제 관리자 매핑은 삭제하지 않습니다.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: ClubUuidParamsSchema,
+  },
+  responses: {
+    204: NoContentResponse,
+    400: validationErrorResponse,
+    401: unauthorizedResponse,
+    404: notFoundResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
   method: 'get',
   path: '/api/v2/clubs/{uuid}/recruitments',
   tags: ['Clubs'],

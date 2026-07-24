@@ -838,6 +838,32 @@ export class ClubService {
     })
   }
 
+  async deleteClubManagerRequest(clubUuid: string, serviceUserId: string): Promise<void> {
+    await this.clubManagerRegisterRequestRepository.manager.transaction(async (manager) => {
+      const managerRequestRepository = manager.getRepository(ClubManagerRegisterRequestEntity)
+      const userNotificationRepository = manager.getRepository(UserNotificationEntity)
+
+      const requests = await managerRequestRepository.findBy({
+        clubId: clubUuid,
+        serviceUserId,
+        status: In([PENDING_CLUB_STATUS, REJECTED_CLUB_STATUS]),
+      })
+      if (requests.length === 0) {
+        throw new NotFoundError('cancellable manager request not found')
+      }
+
+      const requestIds = requests.map((request) => request.id)
+      await userNotificationRepository.delete({
+        sourceType: 'CLUB_MANAGER_REQUEST',
+        sourceId: In(requestIds),
+        type: 'MANAGER_REQUEST_REJECTED',
+      })
+      await managerRequestRepository.delete({
+        id: In(requestIds),
+      })
+    })
+  }
+
   async registerClubManager(serviceUserId: string, clubUuid: string) {
     await this.clubAccessService.getExistingClub(clubUuid)
     const exist = await this.clubManagerRepository.findOneBy({ serviceUserId, clubId: clubUuid })
