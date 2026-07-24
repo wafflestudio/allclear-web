@@ -160,7 +160,7 @@ export class ClubService {
   }
 
   async findAllManagedByUser(serviceUserId: string): Promise<ManagedClubListItem[]> {
-    const [clubManagers, pendingManagerRequests] = await Promise.all([
+    const [clubManagers, managerRequests] = await Promise.all([
       this.clubManagerRepository.find({
         where: {
           serviceUserId,
@@ -172,16 +172,29 @@ export class ClubService {
       this.clubManagerRegisterRequestRepository.find({
         where: {
           serviceUserId,
-          status: PENDING_CLUB_STATUS,
         },
         order: {
           createdAt: 'DESC',
+          id: 'DESC',
         },
       }),
     ])
+    const latestManagerRequestByClubId = new Map<string, ClubManagerRegisterRequestEntity>()
+    managerRequests.forEach((request) => {
+      if (!latestManagerRequestByClubId.has(request.clubId)) {
+        latestManagerRequestByClubId.set(request.clubId, request)
+      }
+    })
+    const latestManagerRequests = Array.from(latestManagerRequestByClubId.values())
+
     const managerClubIds = clubManagers.map((it) => it.clubId)
-    const pendingManagerRequestClubIds = pendingManagerRequests.map((it) => it.clubId)
-    const clubIds = Array.from(new Set([...managerClubIds, ...pendingManagerRequestClubIds]))
+    const managerRequestClubIds = latestManagerRequests
+      .filter(
+        (request) =>
+          request.status === PENDING_CLUB_STATUS || request.status === REJECTED_CLUB_STATUS,
+      )
+      .map((it) => it.clubId)
+    const clubIds = Array.from(new Set([...managerClubIds, ...managerRequestClubIds]))
     if (clubIds.length === 0) {
       return []
     }
@@ -231,7 +244,25 @@ export class ClubService {
           managementStatus: PENDING_CLUB_STATUS,
         }),
       )
-    const pendingManagerRequestClubs = pendingManagerRequests
+    const rejectedManagerRequestClubs = latestManagerRequests
+      .filter(
+        (request) =>
+          request.status === REJECTED_CLUB_STATUS && !managerClubIdSet.has(request.clubId),
+      )
+      .map((request): ManagedClubListEntityItem | null => {
+        const club = clubById.get(request.clubId)
+        if (!club) {
+          return null
+        }
+        return {
+          club,
+          managementStatus: 'MANAGER_REQUEST_REJECTED',
+          managerRequestId: Number(request.id),
+        }
+      })
+      .filter((item): item is ManagedClubListEntityItem => !!item)
+    const pendingManagerRequestClubs = latestManagerRequests
+      .filter((request) => request.status === PENDING_CLUB_STATUS)
       .filter((request) => !managerClubIdSet.has(request.clubId))
       .map((request): ManagedClubListEntityItem | null => {
         const club = clubById.get(request.clubId)
@@ -249,6 +280,7 @@ export class ClubService {
     const orderedItems = [
       ...sortedApprovedManagedClubItems,
       ...rejectedManagedClubs,
+      ...rejectedManagerRequestClubs,
       ...pendingManagedClubs,
       ...pendingManagerRequestClubs,
     ]

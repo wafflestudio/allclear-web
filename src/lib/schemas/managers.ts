@@ -148,7 +148,13 @@ export const ManagedClubPatchSchema = ClubDataSchema.partial()
 export type ManagedClubPatch = z.infer<typeof ManagedClubPatchSchema>
 
 export const ManagedClubListItemSchema = ClubSchema.extend({
-  managementStatus: z.enum(['APPROVED', 'REJECTED', 'PENDING', 'MANAGER_REQUEST_PENDING']),
+  managementStatus: z.enum([
+    'APPROVED',
+    'REJECTED',
+    'MANAGER_REQUEST_REJECTED',
+    'PENDING',
+    'MANAGER_REQUEST_PENDING',
+  ]),
   managerRequestId: z.number().int().optional(),
 }).openapi('ManagedClubListItem')
 
