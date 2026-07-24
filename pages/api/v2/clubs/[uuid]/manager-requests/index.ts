@@ -5,7 +5,7 @@ import { ClubService } from 'server/service/club.service'
 import { UserService } from 'server/service/user.service'
 import { ConflictError, NotFoundError, UserNotFoundError } from 'server/domain/error'
 import { ClubUuidParamsSchema } from 'src/lib/schemas/clubs'
-import { ClubManagerRequestSchema } from 'src/lib/schemas/managers'
+import { ClubManagerRequestPatchSchema, ClubManagerRequestSchema } from 'src/lib/schemas/managers'
 
 type ClubManagerRequestResponse = {
   success: boolean
@@ -38,6 +38,16 @@ export default async function handler(
       const { uuid: clubUuid } = ClubUuidParamsSchema.parse(req.query)
 
       await clubService.deleteClubManagerRequest(clubUuid, user.serviceUserId)
+
+      return res.status(204).send(null)
+    }
+
+    if (req.method === 'PATCH') {
+      const user = await userService.getUserByAccountId(req.headers.user as string)
+      const { uuid: clubUuid } = ClubUuidParamsSchema.parse(req.query)
+      const body = ClubManagerRequestPatchSchema.parse(req.body)
+
+      await clubService.updateClubManagerRequest(clubUuid, user.serviceUserId, body)
 
       return res.status(204).send(null)
     }

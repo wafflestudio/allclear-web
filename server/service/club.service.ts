@@ -35,6 +35,7 @@ import { normalizeClubRecruitType } from 'src/common/constants/club-recruit-type
 import type {
   ClubData,
   ClubManagerRequest,
+  ClubManagerRequestPatch,
   ClubRegisterRequest,
   ManagedClubPatch,
 } from 'src/lib/schemas/managers'
@@ -862,6 +863,28 @@ export class ClubService {
         id: In(requestIds),
       })
     })
+  }
+
+  async updateClubManagerRequest(
+    clubUuid: string,
+    serviceUserId: string,
+    request: ClubManagerRequestPatch,
+  ): Promise<void> {
+    const updated = await this.clubManagerRegisterRequestRepository.update(
+      {
+        clubId: clubUuid,
+        serviceUserId,
+        status: PENDING_CLUB_STATUS,
+      },
+      {
+        ...(request.name !== undefined && { name: request.name }),
+        ...(request.phone !== undefined && { phone: request.phone }),
+        ...(request.student_id !== undefined && { studentId: request.student_id }),
+      },
+    )
+    if (!updated.affected) {
+      throw new NotFoundError('pending manager request not found')
+    }
   }
 
   async registerClubManager(serviceUserId: string, clubUuid: string) {

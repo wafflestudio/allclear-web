@@ -60,6 +60,14 @@ export const ClubManagerRequestSchema = z
 
 export type ClubManagerRequest = z.infer<typeof ClubManagerRequestSchema>
 
+export const ClubManagerRequestPatchSchema = ClubManagerRequestSchema.partial()
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'At least one field is required',
+  })
+  .openapi('ClubManagerRequestPatch')
+
+export type ClubManagerRequestPatch = z.infer<typeof ClubManagerRequestPatchSchema>
+
 const clubDraftShape = {
   name: z.string().nonempty().max(30),
   fullName: z.string().nonempty().max(50),

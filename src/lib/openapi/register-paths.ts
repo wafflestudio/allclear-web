@@ -49,6 +49,7 @@ import {
   ClubActivityImageUploadResponseSchema,
   ClubRegisterRequestSchema,
   ClubRegisterResponseSchema,
+  ClubManagerRequestPatchSchema,
   ClubManagerRequestSchema,
   ClubManagerRegisterRequestSchema,
   ManagedClubPatchSchema,
@@ -1096,6 +1097,37 @@ registry.registerPath({
     401: unauthorizedResponse,
     404: notFoundResponse,
     409: conflictResponse,
+    500: internalServerErrorResponse,
+  },
+})
+
+registry.registerPath({
+  method: 'patch',
+  path: '/api/v2/clubs/{uuid}/manager-requests',
+  tags: ['Clubs'],
+  summary: '동아리 관리 권한 신청 수정',
+  description:
+    '로그인한 사용자가 해당 동아리에 제출한 PENDING 상태의 관리자 권한 신청을 수정합니다. name, phone, student_id 중 최소 하나가 필요하며 신청 상태와 신청 시각은 변경하지 않습니다.',
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: ClubUuidParamsSchema,
+    body: {
+      content: {
+        'application/json': {
+          schema: ClubManagerRequestPatchSchema,
+          example: {
+            phone: '010-9876-5432',
+            student_id: '2022-12345',
+          },
+        },
+      },
+    },
+  },
+  responses: {
+    204: NoContentResponse,
+    400: validationErrorResponse,
+    401: unauthorizedResponse,
+    404: notFoundResponse,
     500: internalServerErrorResponse,
   },
 })
