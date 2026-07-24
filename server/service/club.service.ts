@@ -6,6 +6,7 @@ import {
   ClubRecruitmentEntity,
   UserActivityLogEntity,
   UserActivityLogType,
+  UserNotificationEntity,
 } from '../infra/database/entities'
 import { ClubCategory } from '../domain/model/ClubCategory'
 import { CATEGORIES } from '../../src/fixtures/category'
@@ -774,28 +775,66 @@ export class ClubService {
   ): Promise<void> {
     await this.clubAccessService.getExistingClub(clubUuid)
 
-    const existingManager = await this.clubManagerRepository.findOneBy({
-      clubId: clubUuid,
-    })
-    if (existingManager) {
-      throw new ConflictError('club already has a manager')
-    }
+    await this.clubManagerRegisterRequestRepository.manager.transaction(async (manager) => {
+      const clubManagerRepository = manager.getRepository(ClubManagerEntity)
+      const managerRequestRepository = manager.getRepository(ClubManagerRegisterRequestEntity)
+      const userNotificationRepository = manager.getRepository(UserNotificationEntity)
 
-    const pendingRequest = await this.clubManagerRegisterRequestRepository.findOneBy({
-      clubId: clubUuid,
-      serviceUserId,
-      status: 'PENDING',
-    })
-    if (pendingRequest) {
-      throw new ConflictError('pending manager request already exists')
-    }
+      const existingManager = await clubManagerRepository.findOneBy({
+        clubId: clubUuid,
+      })
+      if (existingManager) {
+        throw new ConflictError('club already has a manager')
+      }
 
-    await this.clubManagerRegisterRequestRepository.insert({
-      serviceUserId,
-      clubId: clubUuid,
-      name: request.name,
-      phone: request.phone,
-      studentId: request.student_id,
+      const pendingRequest = await managerRequestRepository.findOneBy({
+        clubId: clubUuid,
+        serviceUserId,
+        status: PENDING_CLUB_STATUS,
+      })
+      if (pendingRequest) {
+        throw new ConflictError('pending manager request already exists')
+      }
+
+      const rejectedRequest = await managerRequestRepository.findOne({
+        where: {
+          clubId: clubUuid,
+          serviceUserId,
+          status: REJECTED_CLUB_STATUS,
+        },
+        order: {
+          createdAt: 'DESC',
+          id: 'DESC',
+        },
+      })
+
+      if (rejectedRequest) {
+        await managerRequestRepository.update(
+          { id: rejectedRequest.id },
+          {
+            status: PENDING_CLUB_STATUS,
+            rejectReason: '',
+            name: request.name,
+            phone: request.phone,
+            studentId: request.student_id,
+            createdAt: new Date().toISOString(),
+          },
+        )
+        await userNotificationRepository.delete({
+          sourceType: 'CLUB_MANAGER_REQUEST',
+          sourceId: rejectedRequest.id,
+          type: 'MANAGER_REQUEST_REJECTED',
+        })
+        return
+      }
+
+      await managerRequestRepository.insert({
+        serviceUserId,
+        clubId: clubUuid,
+        name: request.name,
+        phone: request.phone,
+        studentId: request.student_id,
+      })
     })
   }
 
